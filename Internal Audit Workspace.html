@@ -1,0 +1,1287 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Internal Audit Workspace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: dark left rail + light work area. Engagement pages follow an "audit file" pattern: header, key-date timeline on the left, methodology + execution on the right, then a tree of risks and controls. */
+:root{
+  --bg:#F2F5F5; --panel:#FFFFFF; --ink:#16222A; --muted:#5A6A72; --line:#D9E2E3; --line-soft:#E8EEEE;
+  --accent:#16777A; --accent-soft:#DDF0F0; --accent-ink:#FFFFFF; --accent-2:#6CC9D3;
+  --good:#1E9E61; --good-soft:#DDF3E8; --warn:#C98A06; --warn-soft:#FCF0D2;
+  --bad:#D23C3C; --bad-soft:#FBE3E3; --info:#5B4FA6; --info-soft:#ECE9F8; --neutral-soft:#ECF0F1; --grey:#B9C3C6;
+  --hl:#FFF7E1; --hl-line:#EAD8A2;
+  --rail:#0F2229; --rail-ink:#A9BEC3; --rail-hi:#FFFFFF; --rail-sel:#1A3740;
+  --font-ui:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1518; --panel:#142024; --ink:#E1EAEC; --muted:#93A6AC; --line:#26383D; --line-soft:#1E2E33;
+  --accent:#4FB7BA; --accent-soft:#163538; --accent-ink:#0D1518; --accent-2:#3E8F98;
+  --good:#4FC48B; --good-soft:#123326; --warn:#E5AE3E; --warn-soft:#382B10; --bad:#EE6E6E; --bad-soft:#3D1C1D;
+  --info:#A79BE6; --info-soft:#26223F; --neutral-soft:#1C2A2F; --grey:#4A5C61; --hl:#29240F; --hl-line:#4C421E;
+  --rail:#091113; --rail-ink:#8FA6AC; --rail-hi:#FFFFFF; --rail-sel:#17303A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1518; --panel:#142024; --ink:#E1EAEC; --muted:#93A6AC; --line:#26383D; --line-soft:#1E2E33;
+  --accent:#4FB7BA; --accent-soft:#163538; --accent-ink:#0D1518; --accent-2:#3E8F98;
+  --good:#4FC48B; --good-soft:#123326; --warn:#E5AE3E; --warn-soft:#382B10; --bad:#EE6E6E; --bad-soft:#3D1C1D;
+  --info:#A79BE6; --info-soft:#26223F; --neutral-soft:#1C2A2F; --grey:#4A5C61; --hl:#29240F; --hl-line:#4C421E;
+  --rail:#091113; --rail-ink:#8FA6AC; --rail-hi:#FFFFFF; --rail-sel:#17303A; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:14px;line-height:1.45}
+button,select,input,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100%}
+.rail{background:var(--rail);color:var(--rail-ink);padding:20px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px;overflow-y:auto}
+.brand{padding:0 8px;color:var(--rail-hi)}
+.brand b{display:block;font-size:15px}
+.brand span{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--rail-ink)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{all:unset;cursor:pointer;display:block;padding:8px 10px;border-radius:6px;color:var(--rail-ink)}
+.nav button small{display:block;font-size:11px;opacity:.75}
+.nav button:hover{color:var(--rail-hi)}
+.nav button[aria-current="page"]{background:var(--rail-sel);color:var(--rail-hi);box-shadow:inset 3px 0 0 var(--accent-2)}
+.nav button:focus-visible,.btn:focus-visible,.chip:focus-visible,.link:focus-visible,.tg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.railnote{margin-top:auto;font-size:11.5px;padding:10px;border:1px dashed #33505A;border-radius:6px}
+
+.main{min-width:0;padding-block:20px 48px;padding-inline:28px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
+.top h1{margin:0;font-size:22px;font-weight:600;text-wrap:balance}
+.top .vi{color:var(--muted);font-size:13px}
+.who{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%}
+.who label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.scope{font-size:12.5px;color:var(--muted)}
+.scope b{color:var(--ink);font-weight:500}
+
+.filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.filters .f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.filters label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+select,input[type=date],input[type=text],input[type=email],input[type=search],textarea{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0;width:100%}
+textarea{resize:vertical;min-height:54px}
+.filters .reset{align-self:end}
+
+.btn{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 12px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.toolbar .count{color:var(--muted);font-size:13px}
+.link{all:unset;cursor:pointer;color:var(--accent);font-weight:500}
+.link:hover{text-decoration:underline}
+
+.section{display:flex;flex-direction:column;gap:14px}
+.sechead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.sechead h2{margin:0;font-size:17px;font-weight:600}
+.sechead q{quotes:none;color:var(--muted);font-size:13px;font-style:italic}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-size:12.5px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:10px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;border-top:3px solid var(--line)}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--muted)}
+.kpi.bad{border-top-color:var(--bad)} .kpi.warn{border-top-color:var(--warn)} .kpi.good{border-top-color:var(--good)} .kpi.acc{border-top-color:var(--accent)}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.panel h3{margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px}
+.panel h3 small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.h3wrap{display:flex;flex-direction:column}
+.help{display:inline-grid;place-items:center;width:16px;height:16px;border:1.5px solid var(--muted);border-radius:50%;font-size:10px;color:var(--muted);font-weight:600;cursor:help}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+svg.chart{width:100%;max-width:640px;height:auto;display:block}
+svg.chart text{font-family:var(--font-ui);fill:var(--muted);font-size:11px}
+svg.chart .lab{fill:var(--ink)} svg.chart .val{fill:var(--ink);font-weight:600}
+.scroll{overflow-x:auto}
+.empty{color:var(--muted);font-size:13px;padding:8px 0}
+
+.tbl{overflow:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);max-height:72vh}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line-soft);text-align:left;vertical-align:top;white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel);font-weight:600;font-size:12px;border-bottom:1px solid var(--line);z-index:1}
+tbody tr:hover > td{background:var(--neutral-soft)}
+td.wrap{white-space:normal;min-width:230px;max-width:360px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.code{font-family:var(--font-mono);font-size:12px}
+th.fu,td.fu{background:var(--hl)}
+th.fu{border-bottom-color:var(--hl-line)}
+th .tag{display:inline-block;margin-left:5px;font-size:10px;font-weight:500;padding:0 5px;border-radius:3px;background:var(--accent-soft);color:var(--accent);vertical-align:1px}
+th .tag.sg{background:var(--info-soft);color:var(--info)}
+td.ed{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
+td.ed.fu{background:var(--hl)}
+td select,td input,td textarea{font-size:12.5px;padding:3px 6px;min-width:110px}
+td textarea{min-width:220px;min-height:38px}
+td input[type=date]{min-width:132px}
+.lock{color:var(--muted);font-size:11px;margin-left:4px}
+
+.pill{display:inline-block;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:600;background:var(--neutral-soft);color:var(--ink);white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.info{background:var(--info-soft);color:var(--info)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+
+.heat{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:4px;font-size:12px}
+.heat .ax{color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center;padding:4px}
+.heat .cell{border-radius:6px;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--neutral-soft);color:var(--muted)}
+.heat .cell b{font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+.heat .cell.r1{background:var(--good-soft)} .heat .cell.r2{background:var(--warn-soft)} .heat .cell.r3{background:var(--bad-soft)}
+.heat .cell .w{font-size:11px;color:var(--bad)}
+.list .row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;padding:7px 0;border-bottom:1px solid var(--line-soft);align-items:baseline;font-size:13px}
+.list .row:last-child{border-bottom:0}
+.banner{border:1px solid var(--line);background:var(--accent-soft);border-radius:10px;padding:10px 14px;font-size:13px}
+.banner .vi{color:var(--muted)}
+
+/* engagement page */
+.crumb{font-size:13px;color:var(--muted)}
+.ehead{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.etitle{display:flex;gap:14px;align-items:center;min-width:0}
+.folder{width:52px;height:52px;border-radius:10px;background:var(--neutral-soft);display:grid;place-items:center;flex:none}
+.etitle h1{margin:0;font-size:21px;font-weight:600;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.eacts{display:flex;gap:8px;flex-wrap:wrap}
+.elayout{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:16px;align-items:start}
+.ecol{display:flex;flex-direction:column;gap:16px;min-width:0}
+.kd{display:flex;flex-direction:column;padding:6px 0}
+.kd .ms{display:grid;grid-template-columns:1fr 22px 1fr;column-gap:12px;min-height:76px}
+.kd .ms .rail2{display:flex;justify-content:center;background:linear-gradient(var(--grey),var(--grey)) center top/2px 100% no-repeat}
+.kd .ms:first-child .rail2{background-position:center 11px} .kd .ms:last-child .rail2{background-size:2px 12px}
+.kd .dot{position:relative;width:18px;height:18px;border-radius:50%;background:var(--grey);margin-top:2px;z-index:1}
+.kd .dot.late{background:var(--bad)} .kd .dot.early{background:var(--good)} .kd .dot.od{background:var(--panel);border:3px solid var(--bad)}
+.kd .lab{font-size:13.5px;padding-bottom:14px}
+.kd .lab b{display:block;font-size:12.5px;margin-top:1px}
+.kd .lab .pl{font-size:11.5px;color:var(--muted)}
+.kd .left{text-align:right} .kd .left .lab{text-align:right}
+.badge{display:inline-block;margin-top:4px;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;color:#fff;background:var(--bad)}
+.badge.early{background:var(--good)} .badge.od{background:var(--panel);color:var(--bad);border:1.5px solid var(--bad)}
+.stepper{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:4px 2px}
+.step{flex:1 1 0;min-width:84px;display:flex;flex-direction:column;gap:6px;position:relative}
+.step .node{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--grey);color:#fff;font-size:12px;position:relative;z-index:1}
+.step.done .node{background:var(--good)} .step.cur .node{background:var(--accent-2);color:var(--rail)}
+.step::after{content:"";position:absolute;top:10px;left:26px;right:4px;height:2px;background:var(--line)}
+.step.done::after{background:var(--accent-2)} .step:last-child::after{display:none}
+.step:last-child{flex:0 0 auto;align-items:flex-end;text-align:right}
+.step span{font-size:13.5px;color:var(--accent);font-weight:500} .step.todo span{color:var(--muted)}
+.prog .pct{display:inline-block;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;position:relative;height:16px}
+.prog .bar{height:8px;background:var(--neutral-soft);border-radius:999px;overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--accent);border-radius:999px}
+.counters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:6px}
+.counter{display:flex;align-items:center;gap:8px;min-width:0}
+.counter .ic{width:32px;height:32px;border-radius:8px;background:var(--neutral-soft);display:grid;place-items:center;flex:none}
+.counter b{font-variant-numeric:tabular-nums;font-size:14px;display:block}
+.counter small{display:block;color:var(--muted);font-size:11.5px;line-height:1.2}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:10px 18px;font-size:13px}
+.dl div > span.k{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tree td{vertical-align:middle}
+.tt{display:flex;align-items:center;gap:8px;min-width:0}
+.tg{all:unset;cursor:pointer;width:18px;height:18px;display:grid;place-items:center;color:var(--muted);border-radius:4px;flex:none}
+.tg.sp{cursor:default}
+.sic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;flex:none;color:#fff;background:var(--accent-2)}
+.sic.ok{background:var(--good)} .sic.iss{background:var(--warn)}
+.tico{flex:none;color:var(--muted)}
+.tt .ttl{color:var(--accent);font-weight:500;white-space:normal}
+.tt .ttl.l2{color:var(--ink);font-weight:400}
+.outc{display:flex;align-items:center;gap:6px}
+.outc i{display:inline-block;width:26px;height:12px;border-radius:999px}
+.av{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;font-size:10.5px;font-weight:700;background:var(--warn-soft);color:var(--warn)}
+tr.det > td{background:var(--neutral-soft)}
+.detgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:10px 16px;padding:6px 4px 10px 52px;white-space:normal}
+.detgrid .fld{display:flex;flex-direction:column;gap:3px;font-size:13px}
+.detgrid .fld > span.k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.detgrid .fld.full{grid-column:1/-1}
+.xbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.xbar input[type=search]{max-width:240px}
+.xbar select{width:auto}
+
+/* admin */
+.matrix select{min-width:110px}
+.pv{font-weight:600}
+.pv-Edit,.pv-Full{color:var(--good)} .pv-View{color:var(--accent)} .pv-Hidden,.pv-No{color:var(--muted)}
+td.pc-Edit,td.pc-Full{background:var(--good-soft)} td.pc-EditOwn{background:color-mix(in srgb,var(--good-soft) 50%,transparent)} td.pc-View{background:var(--accent-soft)} td.pc-Hidden,td.pc-No{background:var(--neutral-soft)}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));gap:10px}
+.roles .panel{gap:4px}
+.roles .panel b{font-size:14px}
+.roles .panel span{font-size:12.5px;color:var(--muted)}
+.lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(330px,100%),1fr));gap:12px}
+.lists table{font-size:12.5px}
+.lists td,.lists th{padding:5px 8px}
+.kind{font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px}
+.kind.Editable{background:var(--good-soft);color:var(--good)} .kind.Fixed{background:var(--warn-soft);color:var(--warn)} .kind.Auto{background:var(--neutral-soft);color:var(--muted)}
+.addval{display:grid;grid-template-columns:80px 1fr 1fr auto;gap:6px}
+
+.modal{position:fixed;inset:0;background:rgba(8,16,20,.55);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:20}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:12px;width:min(740px,100%);display:flex;flex-direction:column}
+.sheet header{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.sheet h3{margin:0;font-size:16px}
+.sheet form{padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));gap:12px}
+.sheet .fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sheet .fld label{font-size:12px;color:var(--muted)}
+.sheet .fld.full{grid-column:1/-1}
+.sheet .note{font-size:12px;color:var(--muted)}
+.sheet .err{grid-column:1/-1;color:var(--bad);font-size:13px}
+.sheet .acts{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
+.toast{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:6px;font-size:13px;z-index:30}
+
+@media (max-width:980px){ .elayout{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static;height:auto;padding:12px 16px;gap:10px}
+  .nav{flex-direction:row;overflow-x:auto}
+  .nav button{white-space:nowrap} .nav button small{display:none}
+  .railnote{display:none}
+  .main{padding-inline:16px}
+  .counters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .detgrid{padding-left:8px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><span>Internal Audit</span><b>Audit Workspace</b></div>
+    <nav class="nav" id="nav" aria-label="Modules"></nav>
+    <div class="railnote">Demo with sample data. Changes stay until the page is reloaded. Today is fixed at 15 Oct 2026.<br><br>Bản demo dùng dữ liệu mẫu. Thay đổi được giữ đến khi tải lại trang.</div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <header><h3 id="mTitle"></h3><button class="btn" id="mClose" type="button">Close</button></header>
+    <form id="mForm" novalidate></form>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* =========================================================
+   Helpers
+   ========================================================= */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TODAY = new Date(2026, 9, 15), TODAY_S = '2026-10-15';
+const D = s => { if (!s) return null; const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const dd = (a, b) => Math.round((a - b) / 86400000);
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fdD = d => d ? `${String(d.getDate()).padStart(2,'0')} ${MON[d.getMonth()]} ${d.getFullYear()}` : '';
+const fd = s => fdD(D(s));
+const pct = (a, b) => b ? Math.round(a * 100 / b) + '%' : '—';
+const uniq = a => [...new Set(a)];
+const cnt = (arr, f) => arr.filter(f).length;
+const dayOnly = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+/* =========================================================
+   Master data (sample)
+   ========================================================= */
+const DB = {};
+DB.companies = [
+  {code:'DRC', name:'DemoCo Retail Corp', hq:'72 Le Thanh Ton, District 1, Ho Chi Minh City', ceo:'u01', status:'Active'},
+  {code:'DLG', name:'DemoCo Logistics JSC', hq:'15 Lach Tray, Ngo Quyen, Hai Phong', ceo:'u02', status:'Active'}];
+DB.offices = [
+  {code:'NOR', name:'North Region', addr:'25 Tran Hung Dao, Hanoi', head:'u04', company:'DRC', status:'Active'},
+  {code:'SOU', name:'South Region', addr:'72 Le Thanh Ton, Ho Chi Minh City', head:'u05', company:'DRC', status:'Active'},
+  {code:'CEN', name:'Central Region', addr:'40 Bach Dang, Da Nang', head:'u06', company:'DRC', status:'Active'},
+  {code:'HPG', name:'Hai Phong Hub', addr:'15 Lach Tray, Hai Phong', head:'u07', company:'DLG', status:'Active'}];
+DB.departments = [
+  {code:'PUR', name:'Purchasing', head:'u20', company:'DRC', office:'SOU', status:'Active'},
+  {code:'HRM', name:'Human Resources', head:'u21', company:'DRC', office:'SOU', status:'Active'},
+  {code:'FIN', name:'Finance', head:'u25', company:'DRC', office:'SOU', status:'Active'},
+  {code:'ITD', name:'Information Technology', head:'u24', company:'DRC', office:'SOU', status:'Active'},
+  {code:'WHS', name:'Warehouse', head:'u22', company:'DRC', office:'CEN', status:'Active'},
+  {code:'SLN', name:'Sales North', head:'u23', company:'DRC', office:'NOR', status:'Active'},
+  {code:'LOG', name:'Logistics Operations', head:'u26', company:'DLG', office:'HPG', status:'Active'},
+  {code:'ACC', name:'Accounting', head:'u27', company:'DLG', office:'HPG', status:'Active'}];
+DB.users = [
+  ['u30','Lam Quang Vinh','vinh.lam@democo.example','IT Administrator','Admin','All','DRC','SOU','ITD'],
+  ['u10','Tran Minh Anh','anh.tran@democo.example','Chief Audit Executive','Audit Manager','All','DRC','SOU','FIN'],
+  ['u11','Le Quoc Huy','huy.le@democo.example','Senior Auditor','Auditor','All','DRC','SOU','FIN'],
+  ['u12','Pham Thu Ha','ha.pham@democo.example','Auditor','Auditor','All','DRC','SOU','FIN'],
+  ['u13','Do Gia Khanh','khanh.do@democo.example','IT Auditor','Auditor','All','DRC','SOU','ITD'],
+  ['u01','Nguyen Van Binh','binh.nguyen@democo.example','Chief Executive Officer','Viewer','Company','DRC','SOU','FIN'],
+  ['u02','Hoang Duc Long','long.hoang@democo.example','Chief Executive Officer','Viewer','Company','DLG','HPG','ACC'],
+  ['u04','Dinh Quang Hai','hai.dinh@democo.example','Head of Office','Viewer','Office','DRC','NOR','SLN'],
+  ['u05','Ta Thu Trang','trang.ta@democo.example','Head of Office','Viewer','Office','DRC','SOU','FIN'],
+  ['u06','Cao Van Luc','luc.cao@democo.example','Head of Office','Viewer','Office','DRC','CEN','WHS'],
+  ['u07','Ho Thanh Tung','tung.ho@democo.example','Head of Office','Viewer','Office','DLG','HPG','LOG'],
+  ['u20','Vo Thanh Tam','tam.vo@democo.example','Head of Department','Auditee','Department','DRC','SOU','PUR'],
+  ['u21','Bui Ngoc Lan','lan.bui@democo.example','Head of Department','Auditee','Department','DRC','SOU','HRM'],
+  ['u22','Dang Huu Phuc','phuc.dang@democo.example','Head of Department','Auditee','Department','DRC','CEN','WHS'],
+  ['u23','Ngo Thi Mai','mai.ngo@democo.example','Head of Department','Auditee','Department','DRC','NOR','SLN'],
+  ['u24','Ly Hoang Nam','nam.ly@democo.example','Head of Department','Auditee','Department','DRC','SOU','ITD'],
+  ['u25','Trinh Van Son','son.trinh@democo.example','Head of Department','Auditee','Department','DRC','SOU','FIN'],
+  ['u26','Mai Anh Tuan','tuan.mai@democo.example','Head of Department','Auditee','Department','DLG','HPG','LOG'],
+  ['u27','Phan Thi Hong','hong.phan@democo.example','Head of Department','Auditee','Department','DLG','HPG','ACC']
+].map(([code,name,email,title,role,scope,company,office,dept]) => ({code,name,email,title,role,scope,company,office,dept,status:'Active'}));
+DB.scopes = [['AS01','Procure-to-Pay'],['AS02','Payroll & HR'],['AS03','Inventory & Warehouse'],['AS04','Order-to-Cash'],['AS05','IT General Controls'],
+  ['AS06','Fixed Assets'],['AS07','Cash & Treasury'],['AS08','Vendor Master Data'],['AS09','Logistics Cost'],['AS10','Sales Commission'],['AS11','Follow-up of prior issues']].map(([code,name])=>({code,name,status:'Active'}));
+DB.processes = [['P2P','Procure-to-Pay',''],['P2P.01','Vendor management','P2P'],['P2P.02','Purchase ordering','P2P'],['P2P.03','Invoice & payment','P2P'],
+  ['PAY','Payroll',''],['PAY.01','Payroll calculation','PAY'],['PAY.02','Employee master data','PAY'],['INV','Inventory',''],['INV.01','Stock count','INV'],['INV.02','Goods receipt','INV'],
+  ['O2C','Order-to-Cash',''],['O2C.01','Credit control','O2C'],['O2C.02','Billing & collection','O2C'],['ITG','IT General Controls',''],['ITG.01','Access management','ITG'],
+  ['ITG.02','Change management','ITG'],['ITG.03','Backup & recovery','ITG'],['FXA','Fixed Assets',''],['FXA.01','Asset register','FXA'],['FXA.02','Asset disposal','FXA'],
+  ['TRS','Treasury',''],['TRS.01','Bank reconciliation','TRS'],['TRS.02','Petty cash','TRS']].map(([code,name,parent])=>({code,name,parent,status:'Active'}));
+
+/* Dropdown lists — same content as the "Dropdown Lists" sheet of Field_Permission_Matrix.xlsx */
+const LISTDEF = [
+ ['Status','Trạng thái','Fixed','Master Data, Administration → Status',[['ACT','Active','Đang sử dụng'],['INA','Inactive','Ngừng sử dụng; giữ lịch sử']]],
+ ['Role','Vai trò','Fixed','Administration → User → Role',[['ADM','Admin','Quản trị hệ thống'],['AMG','Audit Manager','Trưởng kiểm toán'],['AUD','Auditor','Kiểm toán viên'],['AUE','Auditee','Đơn vị được kiểm toán'],['VWR','Viewer','Người xem']]],
+ ['Data Scope','Phạm vi dữ liệu','Fixed','Administration → User → Data Scope',[['ALL','All','Toàn bộ công ty'],['COM','Company','Công ty của người dùng'],['OFF','Office','Văn phòng / khu vực của người dùng'],['DEP','Department','Phòng ban của người dùng']]],
+ ['Position / Title','Chức danh','Editable','Administration → User → Position / Title',[['CAE','Chief Audit Executive','Trưởng kiểm toán nội bộ'],['SAU','Senior Auditor','Kiểm toán viên chính'],['AUD','Auditor','Kiểm toán viên'],['ITA','IT Auditor','Kiểm toán viên CNTT'],['CEO','Chief Executive Officer','Tổng Giám đốc'],['HOO','Head of Office','Giám đốc văn phòng'],['HOD','Head of Department','Trưởng phòng'],['ITA2','IT Administrator','Quản trị hệ thống CNTT']]],
+ ['Engagement Type','Loại cuộc kiểm toán','Editable','Annual Plan → Engagement Type',[['PLN','Planned','Trong kế hoạch năm'],['ADH','Ad-hoc','Phát sinh ngoài kế hoạch'],['FUP','Follow-up','Kiểm tra khắc phục kỳ trước']]],
+ ['Engagement Priority','Mức ưu tiên','Editable','Annual Plan → Engagement Priority',[['H','High','Cao'],['M','Moderate','Trung bình'],['L','Low','Thấp']]],
+ ['Engagement Status','Trạng thái cuộc kiểm toán','Fixed','Annual Plan → Engagement Status',[['NST','Not started','Chưa bắt đầu'],['PLA','Planning','Lập kế hoạch'],['FWK','Fieldwork','Thực địa'],['DRF','Draft Report','Dự thảo báo cáo'],['FIN','Final Report Issued','Đã phát hành báo cáo'],['CAN','Cancelled','Hủy'],['DEF','Deferred','Dời sang kỳ sau']]],
+ ['Schedule Status','Tình trạng tiến độ','Auto','Annual Plan → Schedule Status',[['ONT','On track','Đúng tiến độ'],['ATR','At risk','Còn ≤ 14 ngày đến hạn'],['DLY','Delayed','Đã quá hạn']]],
+ ['Risk Category','Nhóm rủi ro','Editable','RCM → Risk Category',[['FIN','Financial','Tài chính'],['OPS','Operational','Hoạt động'],['CMP','Compliance','Tuân thủ'],['ITR','IT','Công nghệ thông tin'],['FRD','Fraud','Gian lận']]],
+ ['Risk Likelihood','Khả năng xảy ra','Fixed','RCM → Risk Likelihood',[['1','1 – Unlikely','Ít khả năng'],['2','2 – Possible','Có thể xảy ra'],['3','3 – Likely','Nhiều khả năng']]],
+ ['Risk Impact','Mức độ ảnh hưởng','Fixed','RCM → Risk Impact',[['1','1 – Minor','Nhỏ'],['2','2 – Moderate','Trung bình'],['3','3 – Major','Lớn']]],
+ ['Risk Rating','Mức rủi ro','Auto','RCM → Risk Rating',[['H','High','Điểm 6–9'],['M','Moderate','Điểm 3–4'],['L','Low','Điểm 1–2']]],
+ ['Control Frequency','Tần suất kiểm soát','Editable','RCM → Control Frequency',[['ANN','Annual','Hằng năm'],['QTR','Quarterly','Hằng quý'],['MTH','Monthly','Hằng tháng'],['WKL','Weekly','Hằng tuần'],['DLY','Daily','Hằng ngày'],['MTD','Multiple times a day','Nhiều lần/ngày'],['ADH','Ad-hoc','Khi phát sinh']]],
+ ['Control Nature','Bản chất kiểm soát','Fixed','RCM → Control Nature',[['PRV','Preventive','Ngăn chặn'],['DET','Detective','Phát hiện']]],
+ ['Control Type','Loại kiểm soát','Fixed','RCM → Control Type',[['MAN','Manual','Thủ công'],['AUT','Automated','Tự động'],['ITD','IT-dependent','Phụ thuộc IT']]],
+ ['Design Effectiveness','Hữu hiệu thiết kế','Fixed','RCM → Design Effectiveness',[['EFF','Effective','Hiệu quả'],['INE','Ineffective','Không hiệu quả']]],
+ ['Testable','Có thể kiểm tra','Fixed','RCM → Testable',[['Y','Y','Kiểm tra được'],['N','N','Không kiểm tra được']]],
+ ['Reason Not Tested','Lý do không kiểm tra','Editable','RCM → Reason not tested',[['NEV','No evidence / No audit trail','Không có bằng chứng'],['NSY','No system / No data access','Không truy cập được hệ thống'],['NDC','Control not documented','Chưa văn bản hóa'],['NTR','Control not triggered in period','Chưa phát sinh trong kỳ'],['NRS','Insufficient time or resources','Thiếu thời gian, nguồn lực']]],
+ ['Operating Effectiveness','Hữu hiệu vận hành','Fixed','RCM → Operating Effectiveness (suggested)',[['EFF','Effective','Hiệu quả'],['INE','Ineffective','Không hiệu quả'],['UTT','Unable to Test','Không kiểm tra được']]],
+ ['Overall Conclusion','Kết luận chung','Auto','RCM → Overall Conclusion (suggested)',[['EFF','Effective','Hiệu quả'],['INE','Ineffective','Không hiệu quả'],['UTT','Unable to Test','Không kiểm tra được'],['NTY','Not Tested Yet','Chưa kiểm tra'],['NOC','No Control','Chưa có kiểm soát']]],
+ ['Issue Rating','Mức độ phát hiện','Editable','Issue Log → Issue Rating',[['H','High','Cao'],['M','Moderate','Trung bình'],['L','Low','Thấp'],['PI','Process Improvement','Đề xuất cải tiến']]],
+ ['Issue Type','Loại phát hiện','Editable','Issue Log → Issue Type',[['NCP','No control in place','Chưa có kiểm soát'],['CDD','Control Design Deficiency','Lỗi thiết kế'],['COD','Control Operating Deficiency','Lỗi vận hành'],['EFO','Efficiency Opportunity','Cơ hội cải tiến'],['NCO','Non-Compliance','Không tuân thủ']]],
+ ['Root Cause Category','Nhóm nguyên nhân','Editable','Issue Log → Root Cause Category (suggested)',[['PPL','People','Con người'],['PRC','Process','Quy trình'],['SYS','System','Hệ thống'],['POL','Policy','Chính sách']]],
+ ['Issue Status','Trạng thái phát hiện','Auto','Issue Log, Follow-up → Issue Status',[['OOS','Open - on schedule','Còn mở, chưa đến hạn'],['CON','Completed on time','Hoàn thành đúng hạn'],['CLT','Completed late','Hoàn thành trễ'],['OD3','Open - up to 3 months overdue','Quá hạn đến 3 tháng'],['OD9','Open - more than 3 months overdue','Quá hạn trên 3 tháng']]],
+ ['Overdue','Quá hạn','Auto','Issue Log, Follow-up → Overdue',[['OPN','Open','Chưa quá hạn'],['PDD','Past due date','Đã quá hạn']]],
+ ['Repeat Issue','Phát hiện lặp lại','Fixed','Follow-up → Repeat Issue',[['Y','Y','Có'],['N','N','Không']]],
+ ['Validation Status','Trạng thái xác nhận','Fixed','Follow-up → Validation (suggested)',[['PEN','Pending Validation','Chờ xác nhận'],['VAL','Validated','Đã xác nhận'],['REJ','Rejected','Không chấp nhận']]],
+ ['Aging Bucket','Nhóm tuổi quá hạn','Auto','Dashboard → Overdue aging',[['ND','Not due','Chưa đến hạn'],['A1','1–30 days','1–30 ngày'],['A2','31–60 days','31–60 ngày'],['A3','> 60 days','Trên 60 ngày']]]
+];
+DB.lists = LISTDEF.map(([name,vi,kind,used,vals]) => ({name,vi,kind,used,vals:vals.map(([code,v,m])=>({code,v,m,status:'Active'}))}));
+const LV = name => { const l = DB.lists.find(x=>x.name===name); return l ? l.vals.filter(x=>x.status==='Active').map(x=>x.v) : []; };
+
+/* =========================================================
+   Transactions (sample)
+   ========================================================= */
+DB.engagements = [
+  ['IA-2026-01','Procure-to-Pay Review','DRC','SOU',['PUR'],'Planned','AS01','2026-01-12','2026-03-06','u11',['u12'],'u20','High','Final Report Issued','2026-01-12','2026-03-04'],
+  ['IA-2026-02','Payroll Audit','DRC','SOU',['HRM'],'Planned','AS02','2026-02-02','2026-03-27','u12',['u11'],'u21','Moderate','Final Report Issued','2026-02-09','2026-04-10'],
+  ['IA-2026-03','Inventory & Warehouse Audit','DRC','CEN',['WHS'],'Planned','AS03','2026-03-02','2026-04-24','u11',['u12'],'u22','High','Final Report Issued','2026-03-02','2026-04-22'],
+  ['IA-2026-04','Order-to-Cash Review – North','DRC','NOR',['SLN'],'Planned','AS04','2026-04-06','2026-06-05','u12',['u11'],'u23','High','Final Report Issued','2026-04-13','2026-06-26'],
+  ['IA-2026-05','IT General Controls','DRC','SOU',['ITD'],'Planned','AS05','2026-05-04','2026-07-03','u13',['u11'],'u24','High','Final Report Issued','2026-05-04','2026-07-01'],
+  ['IA-2026-06','Fixed Asset Audit','DLG','HPG',['ACC'],'Planned','AS06','2026-06-01','2026-07-31','u12',[],'u27','Moderate','Final Report Issued','2026-06-08','2026-08-20'],
+  ['IA-2026-07','Store Cash Handling – Central','DRC','CEN',['WHS'],'Planned','AS07','2026-07-06','2026-08-28','u11',[],'u22','Low','Deferred','',''],
+  ['IA-2026-08','Cash & Treasury Review','DRC','SOU',['FIN'],'Planned','AS07','2026-08-03','2026-10-02','u11',['u12'],'u25','High','Draft Report','2026-08-10',''],
+  ['IA-2026-09','Follow-up on 2025 Issues','DRC','SOU',['FIN','PUR'],'Follow-up','AS11','2026-09-01','2026-09-30','u12',[],'u25','Moderate','Final Report Issued','2026-09-01','2026-10-05'],
+  ['IA-2026-10','Vendor Master Data Review','DRC','SOU',['PUR'],'Ad-hoc','AS08','2026-09-07','2026-10-23','u13',['u12'],'u20','High','Fieldwork','2026-09-14',''],
+  ['IA-2026-11','Logistics Cost Audit','DLG','HPG',['LOG'],'Planned','AS09','2026-10-05','2026-12-04','u12',['u13'],'u26','Moderate','Planning','2026-10-05',''],
+  ['IA-2026-12','Sales Commission Review','DRC','NOR',['SLN'],'Planned','AS10','2026-11-02','2026-12-18','u11',[],'u23','Low','Not started','','']
+].map(([code,name,company,office,depts,type,scope,pStart,pEnd,aic,team,owner,priority,status,aStart,aEnd]) =>
+  ({code,name,company,office,depts,type,scope,pStart,pEnd,year:'2026',aic,team,owner,priority,status,aStart,aEnd}));
+
+DB.rcm = [
+  ['IA-2026-01','P2P','P2P.01','R-P2P-001','Fictitious vendors are created in the system','Fraud',2,3,'C-P2P-001','New vendor approved by Purchasing Manager with supporting documents','Ad-hoc','Preventive','Manual','u20','Effective','Y','','Ineffective','AP-P2P-01','ISS-2026-01-01','WP 1.1'],
+  ['IA-2026-01','P2P','P2P.02','R-P2P-002','Purchases made without an approved PO','Operational',2,2,'C-P2P-002','ERP blocks goods receipt without an approved PO','Multiple times a day','Preventive','Automated','u24','Effective','Y','','Effective','AP-P2P-02','','WP 1.2'],
+  ['IA-2026-01','P2P','P2P.03','R-P2P-003','Duplicate or excess invoice payment','Financial',2,3,'C-P2P-003','Three-way match PO–GRN–invoice before payment','Daily','Preventive','IT-dependent','u25','Ineffective','Y','','Ineffective','AP-P2P-03','ISS-2026-01-02','WP 1.3'],
+  ['IA-2026-01','P2P','P2P.03','R-P2P-004','Payment sent to the wrong bank account','Financial',1,3,'C-P2P-004','Dual authorization of bank transfers','Daily','Preventive','Manual','u25','Effective','N','No evidence / No audit trail','','AP-P2P-04','ISS-2026-01-03','WP 1.4'],
+  ['IA-2026-02','PAY','PAY.01','R-PAY-001','Ghost employees on the payroll','Fraud',2,3,'C-PAY-001','Monthly HR–payroll headcount reconciliation','Monthly','Detective','Manual','u21','Effective','Y','','Ineffective','AP-PAY-01','ISS-2026-02-01','WP 2.1'],
+  ['IA-2026-02','PAY','PAY.01','R-PAY-002','Incorrect salary calculation','Financial',2,2,'C-PAY-002','Payroll register reviewed and signed by HR Manager','Monthly','Detective','Manual','u21','Effective','Y','','Effective','AP-PAY-02','','WP 2.2'],
+  ['IA-2026-02','PAY','PAY.02','R-PAY-003','Unauthorized changes to salary master data','Compliance',1,3,'C-PAY-003','Review of salary change log','Monthly','Detective','IT-dependent','u21','Ineffective','Y','','Ineffective','AP-PAY-03','ISS-2026-02-02','WP 2.3'],
+  ['IA-2026-03','INV','INV.01','R-INV-001','Inventory shrinkage is not detected','Operational',3,2,'C-INV-001','Quarterly full stock count','Quarterly','Detective','Manual','u22','Effective','Y','','Effective','AP-INV-01','','WP 3.1'],
+  ['IA-2026-03','INV','INV.02','R-INV-002','Goods received are not recorded on time','Financial',2,2,'C-INV-002','GRN matched to delivery note every day','Daily','Preventive','Manual','u22','Effective','Y','','Ineffective','AP-INV-02','ISS-2026-03-01','WP 3.2'],
+  ['IA-2026-03','INV','INV.01','R-INV-003','Obsolete stock is not provisioned','Financial',2,1,'','','','','','','','','','','AP-INV-03','ISS-2026-03-02','WP 3.3'],
+  ['IA-2026-04','O2C','O2C.01','R-O2C-001','Sales exceed customer credit limits','Financial',3,3,'C-O2C-001','ERP credit limit check at order entry','Multiple times a day','Preventive','Automated','u23','Effective','Y','','Ineffective','AP-O2C-01','ISS-2026-04-01','WP 4.1'],
+  ['IA-2026-04','O2C','O2C.02','R-O2C-002','Revenue recorded in the wrong period','Compliance',2,3,'C-O2C-002','Month-end cut-off review','Monthly','Detective','Manual','u23','Effective','Y','','Effective','AP-O2C-02','','WP 4.2'],
+  ['IA-2026-04','O2C','O2C.02','R-O2C-003','Overdue receivables are not followed up','Financial',3,2,'C-O2C-003','Weekly AR aging review','Weekly','Detective','Manual','u23','Effective','N','Control not documented','','AP-O2C-03','ISS-2026-04-02','WP 4.3'],
+  ['IA-2026-05','ITG','ITG.01','R-ITG-001','Terminated staff keep system access','IT',2,3,'C-ITG-001','Access removed within 24 hours of termination','Ad-hoc','Preventive','Manual','u24','Effective','Y','','Ineffective','AP-ITG-01','ISS-2026-05-01','WP 5.1'],
+  ['IA-2026-05','ITG','ITG.02','R-ITG-002','Unapproved changes moved to production','IT',2,3,'C-ITG-002','Change approved in ticketing tool before deployment','Ad-hoc','Preventive','IT-dependent','u24','Effective','Y','','Effective','AP-ITG-02','','WP 5.2'],
+  ['IA-2026-05','ITG','ITG.03','R-ITG-003','Data loss after a system failure','IT',1,3,'C-ITG-003','Daily automated backup with monthly restore test','Daily','Detective','Automated','u24','Effective','N','No system / No data access','','AP-ITG-03','ISS-2026-05-03','WP 5.3'],
+  ['IA-2026-05','ITG','ITG.01','R-ITG-004','Excessive privileged access','IT',2,2,'C-ITG-004','Quarterly user access review','Quarterly','Detective','Manual','u24','Ineffective','Y','','Ineffective','AP-ITG-04','ISS-2026-05-02','WP 5.4'],
+  ['IA-2026-06','FXA','FXA.01','R-FXA-001','Recorded assets are not physically present','Financial',2,2,'C-FXA-001','Annual physical asset verification','Annual','Detective','Manual','u27','Effective','Y','','Ineffective','AP-FXA-01','ISS-2026-06-01','WP 6.1'],
+  ['IA-2026-06','FXA','FXA.02','R-FXA-002','Assets disposed without approval','Compliance',1,2,'C-FXA-002','Disposal form signed by Director','Ad-hoc','Preventive','Manual','u27','Effective','N','Control not triggered in period','','AP-FXA-02','','WP 6.2'],
+  ['IA-2026-08','TRS','TRS.01','R-TRS-001','Bank differences remain unreconciled','Financial',2,3,'C-TRS-001','Monthly bank reconciliation reviewed by Chief Accountant','Monthly','Detective','Manual','u25','Effective','Y','','Ineffective','AP-TRS-01','','WP 7.1'],
+  ['IA-2026-08','TRS','TRS.02','R-TRS-002','Cash misappropriated from petty cash','Fraud',2,2,'C-TRS-002','Surprise petty cash count','Quarterly','Detective','Manual','u25','Effective','Y','','Effective','AP-TRS-02','','WP 7.2'],
+  ['IA-2026-10','P2P','P2P.01','R-P2P-005','Vendor bank details changed without verification','Fraud',3,3,'C-P2P-005','Call-back verification on bank detail changes','Ad-hoc','Preventive','Manual','u20','Ineffective','Y','','','AP-P2P-05','','WP 1.1'],
+  ['IA-2026-10','P2P','P2P.01','R-P2P-006','Duplicate vendor records','Operational',2,1,'','','','','','','','','','','AP-P2P-06','','WP 1.2'],
+  ['IA-2026-10','P2P','P2P.03','R-P2P-007','Payments released to blocked vendors','Fraud',2,3,'C-P2P-007','ERP prevents payment runs for blocked vendors','Daily','Preventive','Automated','u24','Effective','Y','','Effective','AP-P2P-07','','WP 1.3'],
+  ['IA-2026-10','P2P','P2P.01','R-P2P-008','Inactive vendors remain usable','Operational',2,2,'C-P2P-008','Annual vendor master clean-up','Annual','Detective','Manual','u20','Effective','Y','','','AP-P2P-08','','WP 1.4']
+].map(([eng,process,sub,riskCode,riskDesc,cat,L,I,ctrl,ctrlDesc,freq,nature,ctype,owner,design,testable,reason,operating,program,issue,wp]) =>
+  ({eng,process,sub,riskCode,riskDesc,cat,L,I,ctrl,ctrlDesc,freq,nature,ctype,owner,design,testable,reason,operating,program,issue,wp}));
+
+DB.issues = [
+  ['ISS-2026-01-01','IA-2026-01','P2P','P2P.01','8 of 40 new vendors were created without approval documents.','High','Control Operating Deficiency','Purchasing Policy, section 4.2','Approval checklist is skipped in peak periods; ERP does not enforce it.','System','Risk of fictitious vendors and fraudulent payments.','Enforce an approval workflow in ERP.','u20','2026-05-31','Agreed. ERP workflow will be configured.','','2026-05-20','N','u11','2026-05-27'],
+  ['ISS-2026-01-02','IA-2026-01','P2P','P2P.03','Three-way match tolerance is set at 10%, allowing overpayment.','High','Control Design Deficiency','Finance Manual, section 7','Tolerance was set at go-live and never reviewed.','System','Overpayments of up to 10% per invoice.','Reduce tolerance to 2% and review exceptions monthly.','u25','2026-06-30','Agreed, needs vendor consultation.','2026-08-31','2026-09-15','','',''],
+  ['ISS-2026-01-03','IA-2026-01','P2P','P2P.03','No evidence of a second approver on 12 bank transfers.','Moderate','Control Operating Deficiency','Treasury Policy, section 3.1','Approvals are given by phone and not recorded.','People','Unauthorized payments cannot be detected.','Require online dual approval in the banking portal.','u25','2026-05-31','Agreed.','','','','',''],
+  ['ISS-2026-02-01','IA-2026-02','PAY','PAY.01','Headcount reconciliation was not performed in 3 of 6 months tested.','Moderate','Control Operating Deficiency','HR Procedure HR-05','Staff shortage in HR during Q1.','People','Ghost employees may remain on payroll.','Assign a backup reviewer for the monthly reconciliation.','u21','2026-07-31','Agreed.','','2026-07-25','N','u12','2026-08-03'],
+  ['ISS-2026-02-02','IA-2026-02','PAY','PAY.02','Change log for salary master data is never reviewed.','High','Control Design Deficiency','HR Procedure HR-07','No owner assigned for the log review.','Process','Unauthorized salary changes go unnoticed.','Assign the HR Manager to review the change log monthly.','u21','2026-08-31','Agreed.','','','','',''],
+  ['ISS-2026-02-03','IA-2026-02','PAY','PAY.01','Overtime approval needs 3 signatures; it could be done in the HR system.','Process Improvement','Efficiency Opportunity','—','Paper-based form.','Process','About 20 staff-hours lost each month.','Move overtime approval into the HR system.','u21','2026-12-31','Agreed, planned for Q4.','','','','',''],
+  ['ISS-2026-03-01','IA-2026-03','INV','INV.02','GRNs are posted 3–5 days after goods physically arrive.','Moderate','Control Operating Deficiency','Warehouse Procedure WH-02','Receiving staff post GRNs in weekly batches.','People','Stock and payables are misstated at month-end.','Post GRNs on the day of receipt.','u22','2026-07-31','Agreed.','','2026-08-10','','',''],
+  ['ISS-2026-03-02','IA-2026-03','INV','INV.01','There is no policy for provisioning obsolete stock.','Moderate','No control in place','Accounting standard VAS 02','Policy never drafted.','Policy','Inventory value may be overstated.','Issue an obsolete stock provisioning policy.','u25','2026-09-30','Agreed.','2026-11-30','','','',''],
+  ['ISS-2026-03-03','IA-2026-03','INV','INV.01','Count sheets are not pre-numbered.','Low','Control Design Deficiency','Warehouse Procedure WH-04','Template not updated.','Process','Missing count sheets cannot be detected.','Use pre-numbered count sheets.','u22','2026-06-30','Agreed.','','2026-06-15','N','u11','2026-06-22'],
+  ['ISS-2026-04-01','IA-2026-04','O2C','O2C.01','Sales staff can override credit limits without approval; 27 overrides in Q1.','High','Control Operating Deficiency','Credit Policy, section 2','Override right granted to all sales users.','System','Bad debt exposure above approved limits.','Restrict override to the Sales Director.','u23','2026-09-30','Agreed.','','','','',''],
+  ['ISS-2026-04-02','IA-2026-04','O2C','O2C.02','Weekly AR aging review is not documented.','Moderate','Control Design Deficiency','Credit Policy, section 5','No template for the review.','Process','Overdue debts are not followed up on time.','Introduce a signed weekly aging review template.','u23','2026-10-31','Agreed.','','','','',''],
+  ['ISS-2026-04-03','IA-2026-04','O2C','O2C.02','Invoices to two key customers were issued later than contract terms.','Moderate','Non-Compliance','Customer contracts, payment terms clause','Billing team unaware of contract terms.','People','Delayed cash collection and contract breach.','Share contract billing terms with the billing team.','u23','2026-08-31','Agreed.','','','','',''],
+  ['ISS-2026-05-01','IA-2026-05','ITG','ITG.01','14 terminated staff still had active ERP accounts.','High','Control Operating Deficiency','IT Security Policy, section 4','HR does not notify IT of terminations.','Process','Former staff can access company data.','Automate termination notice from HR to IT.','u24','2026-08-15','Agreed.','','2026-08-10','Y','u13','2026-08-20'],
+  ['ISS-2026-05-02','IA-2026-05','ITG','ITG.01','User access review was not performed for 2 quarters.','Moderate','Control Design Deficiency','IT Security Policy, section 6','Review owner not assigned.','Process','Excessive access is not detected.','Assign owners and schedule quarterly reviews.','u24','2026-09-30','Agreed.','2026-12-31','','','',''],
+  ['ISS-2026-05-03','IA-2026-05','ITG','ITG.03','Backup restore test results are not retained.','Low','Non-Compliance','IT Operations Procedure IT-09','Results deleted after each test.','Process','Cannot prove that backups can be restored.','Keep restore test logs for 12 months.','u24','2026-10-31','Agreed.','','','','',''],
+  ['ISS-2026-06-01','IA-2026-06','FXA','FXA.01','6 assets in the register could not be located.','Moderate','Control Operating Deficiency','Fixed Asset Policy, section 3','Transfers between sites not recorded.','People','Asset register is overstated.','Investigate the 6 assets and record all transfers.','u27','2026-11-30','Agreed.','','','','',''],
+  ['ISS-2026-06-02','IA-2026-06','FXA','FXA.01','Asset tagging is manual; barcode tagging would speed up counts.','Process Improvement','Efficiency Opportunity','—','Manual labels.','System','Counts take 3 days per site.','Introduce barcode tags and scanners.','u27','2027-03-31','Agreed, budget requested.','','','','',''],
+  ['ISS-2026-09-01','IA-2026-09','TRS','TRS.01','Bank reconciliations are still reviewed late (2025 issue not resolved).','High','Control Operating Deficiency','Finance Manual, section 9','Chief Accountant position vacant for 4 months.','People','Errors and fraud in bank balances go undetected.','Assign an interim reviewer until the position is filled.','u25','2026-07-31','Agreed.','','','','','']
+].map(([code,eng,process,sub,obs,rating,type,criteria,root,rootCat,impact,rec,pic,due,resp,revised,completion,repeat,validatedBy,validationDate]) =>
+  ({code,eng,process,sub,obs,rating,type,criteria,root,rootCat,impact,rec,pic,due,resp,revised,completion,repeat,validatedBy,validationDate}));
+
+DB.trail = [
+  {t:'2026-10-14 16:42', u:'u10', mod:'Annual Plan', rec:'IA-2026-11', f:'Engagement Status', o:'Not started', n:'Planning'},
+  {t:'2026-10-13 10:05', u:'u24', mod:'Follow-up', rec:'ISS-2026-05-02', f:'Management Response', o:'', n:'Agreed.'},
+  {t:'2026-10-12 09:31', u:'u30', mod:'Administration', rec:'u13', f:'Data Scope', o:'Department', n:'All'}
+];
+
+/* =========================================================
+   Calculations
+   ========================================================= */
+const L = {
+  user:c=>DB.users.find(u=>u.code===c), company:c=>DB.companies.find(x=>x.code===c), office:c=>DB.offices.find(x=>x.code===c),
+  dept:c=>DB.departments.find(x=>x.code===c), eng:c=>DB.engagements.find(x=>x.code===c), proc:c=>DB.processes.find(x=>x.code===c), scope:c=>DB.scopes.find(x=>x.code===c)
+};
+const nm = (fn, c) => (fn(c) || {}).name || c || '';
+const initials = c => { const u = L.user(c); if (!u) return '—'; const p = u.name.split(' '); return (p[0][0] + p[p.length-1][0]).toUpperCase(); };
+
+function issueCalc(i){
+  const due = i.revised || i.due, dueD = D(due);
+  if (i.completion){ const late = Math.max(0, dd(D(i.completion), dueD));
+    return {status: late>0?'Completed late':'Completed on time', overdue:'', days:late, open:false, overdueNow:false, curDue:due}; }
+  const late = dd(TODAY, dueD);
+  if (late <= 0) return {status:'Open - on schedule', overdue:'Open', days:0, open:true, overdueNow:false, curDue:due};
+  return {status: late<=90?'Open - up to 3 months overdue':'Open - more than 3 months overdue', overdue:'Past due date', days:late, open:true, overdueNow:true, curDue:due};
+}
+function schedCalc(e){
+  if (['Cancelled','Deferred'].includes(e.status)) return '—';
+  const pe = D(e.pEnd);
+  if (e.aEnd) return D(e.aEnd) > pe ? 'Delayed' : 'On track';
+  if (TODAY > pe) return 'Delayed';
+  if (dd(pe, TODAY) <= 14) return 'At risk';
+  if (e.status === 'Not started' && TODAY > D(e.pStart)) return 'At risk';
+  return 'On track';
+}
+function engCounts(e){
+  const is = DB.issues.filter(i=>i.eng===e.code).map(i=>({...i,c:issueCalc(i)}));
+  return {n:is.length, high:cnt(is,i=>i.rating==='High'), mod:cnt(is,i=>i.rating==='Moderate'), low:cnt(is,i=>i.rating==='Low'), pi:cnt(is,i=>i.rating==='Process Improvement'),
+    open:cnt(is,i=>i.c.open), over:cnt(is,i=>i.c.overdueNow), closed:cnt(is,i=>!i.c.open)};
+}
+function rcmCalc(r){
+  const score = r.L * r.I, rating = score>=6?'High':score>=3?'Moderate':'Low';
+  let overall;
+  if (!r.ctrl) overall='No Control';
+  else if (r.testable==='N') overall='Unable to Test';
+  else if (r.design==='Ineffective' || r.operating==='Ineffective') overall='Ineffective';
+  else if (!r.operating) overall='Not Tested Yet';
+  else overall='Effective';
+  return {score, rating, overall};
+}
+
+/* =========================================================
+   Permissions (from Field_Permission_Matrix.xlsx)
+   ========================================================= */
+const ROLES = ['Admin','Audit Manager','Auditor','Auditee','Viewer'];
+const RI = r => ROLES.indexOf(r);
+const MODS = [
+  ['dashboard','Dashboard','Tổng quan'],['plan','Annual Plan','Kế hoạch năm'],['rcm','Risk Control Matrix','Ma trận rủi ro – kiểm soát'],
+  ['log','Issue Log','Sổ theo dõi phát hiện'],['fu','Follow-up','Theo dõi khắc phục'],['master','Master Data','Dữ liệu danh mục'],
+  ['users','Administration – User','Quản trị – Người dùng'],['roles','Administration – Role & Permissions','Quản trị – Vai trò & phân quyền'],['trail','Administration – Audit Trail','Quản trị – Nhật ký thay đổi']];
+const MP = {
+  dashboard:['View','View','View','No access','View'], plan:['View','Full','Edit','No access','No access'], rcm:['View','Full','Edit','No access','No access'],
+  log:['View','Full','Edit','View','No access'], fu:['View','Full','Edit','Edit','No access'], master:['Full','View','View','No access','No access'],
+  users:['Full','View','View','No access','No access'], roles:['Full','No access','No access','No access','No access'], trail:['View','View','No access','No access','No access']};
+const E='Edit', EO='Edit (own)', V='View', H='Hidden';
+const SET=[V,E,V,H,H], PROG=[V,E,EO,H,H], RC=[V,E,EO,H,H], IS=[V,E,EO,V,H];
+const FIELDS = {
+  plan:{label:'Annual Plan', rows:[
+    ['name','Engagement Name',SET],['type','Engagement Type',SET],['year','Year',SET],['company','Company',SET],['office','Office',SET],['depts','Department',SET],
+    ['pStart','Planned Start Date',SET],['pEnd','Planned End Date',SET],['scope','Audit Scope',SET],['aic','Auditor In Charge',SET],['team','Team members',SET],
+    ['owner','Process Owner',SET],['priority','Engagement Priority',SET],['status','Engagement Status',PROG],['aStart','Actual Start Date',PROG],['aEnd','Actual End Date',PROG]]},
+  rcm:{label:'Risk Control Matrix', rows:[
+    ['process','Process Name',RC],['sub','Sub-Process',RC],['riskDesc','Risk Description',RC],['cat','Risk Category',RC],['L','Risk Likelihood',RC],['I','Risk Impact',RC],
+    ['ctrlDesc','Control Description',RC],['freq','Control Frequency',RC],['nature','Control Nature',RC],['ctype','Control Type',RC],['owner','Control Owner',RC],
+    ['design','Design Effectiveness',RC],['testable','Testable',RC],['reason','Reason not tested',RC],['operating','Operating Effectiveness',RC],
+    ['program','Audit program',RC],['issue','Issue Code',RC],['wp','WP ref',RC]]},
+  issue:{label:'Issue Log & Follow-up', rows:[
+    ['obs','Observation',IS],['rating','Issue Rating',IS],['type','Issue Type',IS],['criteria','Criteria',IS],['root','Root Cause',IS],['rootCat','Root Cause Category',IS],
+    ['impact','Impact / Risk',IS],['rec','Recommendation / Action Plan',IS],['pic','Person in charge',IS],['due','Due Date',IS],
+    ['resp','Management Response',[V,E,EO,EO,H]],['revised','Revised Due Date',[V,E,V,V,H]],['completion','Completion Date',[V,E,EO,EO,H]],
+    ['validatedBy','Validated By',[V,E,EO,V,H]],['validationDate','Validation Date',[V,E,EO,V,H]],['repeat','Repeat Issue',[V,E,EO,H,H]]]}
+};
+const FP = {}; Object.entries(FIELDS).forEach(([m,def]) => { FP[m] = {}; def.rows.forEach(([k,,p]) => FP[m][k] = [...p]); });
+
+const S = {tab:'dashboard', user:'u10', eng:null, etab:'overview', mtab:'Company', atab:'users', pmod:'plan', dashSec:'all', f:{}, open:new Set(), closed:new Set(), xq:'', xo:'', xs:''};
+['dashboard','plan','rcm','log','fu'].forEach(k=>S.f[k]={});
+const me = () => L.user(S.user);
+const mp = k => MP[k][RI(me().role)];
+const can = k => mp(k) !== 'No access';
+const fpv = (m,f) => FP[m] && FP[m][f] ? FP[m][f][RI(me().role)] : 'View';
+const visible = (m,f) => fpv(m,f) !== 'Hidden';
+function ownRec(m, r){
+  const u = me(), e = m==='plan' ? r : L.eng(r.eng);
+  if (u.role === 'Auditor') return !!e && (e.aic===u.code || e.team.includes(u.code));
+  if (u.role === 'Auditee') return !!e && (e.depts.includes(u.dept) || ((L.user(r.pic)||{}).dept===u.dept));
+  return false;
+}
+function canEdit(m, f, r){ const v = fpv(m,f); return v===E || (v===EO && ownRec(m,r)); }
+function inScope(e){
+  const u = me();
+  if (u.scope==='All') return true;
+  if (u.scope==='Company') return e.company===u.company;
+  if (u.scope==='Office') return e.office===u.office;
+  return e.depts.includes(u.dept);
+}
+
+/* =========================================================
+   Audit trail + inline editing
+   ========================================================= */
+function stamp(){ const n = new Date(); return `${TODAY_S} ${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`; }
+function log(mod, rec, f, o, n){ DB.trail.unshift({t:stamp(), u:S.user, mod, rec, f, o:String(o??''), n:String(n??'')}); }
+const REC = {
+  plan:{find:k=>L.eng(k), key:r=>r.code, mod:'Annual Plan'},
+  rcm:{find:k=>DB.rcm.find(r=>r.riskCode===k), key:r=>r.riskCode, mod:'Risk Control Matrix'},
+  issue:{find:k=>DB.issues.find(i=>i.code===k), key:r=>r.code, mod:'Issue Log'}
+};
+const fieldLabel = (m,f) => (FIELDS[m].rows.find(x=>x[0]===f)||[])[1] || f;
+
+const userOpts = () => DB.users.filter(u=>u.status==='Active').map(u=>[u.code,u.name]);
+const auditorOpts = () => DB.users.filter(u=>['Auditor','Audit Manager'].includes(u.role)&&u.status==='Active').map(u=>[u.code,u.name]);
+const listOpts = n => () => LV(n).map(v=>[v,v]);
+const KIND = { /* editor type + options per field */
+  plan:{name:['text'],type:['sel',listOpts('Engagement Type')],year:['text'],pStart:['date'],pEnd:['date'],scope:['sel',()=>DB.scopes.map(s=>[s.code,s.name])],
+    aic:['sel',auditorOpts],owner:['sel',userOpts],priority:['sel',listOpts('Engagement Priority')],status:['sel',listOpts('Engagement Status')],aStart:['date'],aEnd:['date']},
+  rcm:{riskDesc:['area'],cat:['sel',listOpts('Risk Category')],L:['sel',()=>[[1,'1'],[2,'2'],[3,'3']]],I:['sel',()=>[[1,'1'],[2,'2'],[3,'3']]],ctrlDesc:['area'],
+    freq:['sel',listOpts('Control Frequency')],nature:['sel',listOpts('Control Nature')],ctype:['sel',listOpts('Control Type')],owner:['sel',userOpts],
+    design:['sel',listOpts('Design Effectiveness')],testable:['sel',listOpts('Testable')],reason:['sel',listOpts('Reason Not Tested')],
+    operating:['sel',()=>[['Effective','Effective'],['Ineffective','Ineffective']]],program:['text'],issue:['sel',()=>DB.issues.map(i=>[i.code,i.code])],wp:['text']},
+  issue:{obs:['area'],rating:['sel',listOpts('Issue Rating')],type:['sel',listOpts('Issue Type')],criteria:['area'],root:['area'],rootCat:['sel',listOpts('Root Cause Category')],
+    impact:['area'],rec:['area'],pic:['sel',userOpts],due:['date'],resp:['area'],revised:['date'],completion:['date'],validatedBy:['sel',auditorOpts],validationDate:['date'],
+    repeat:['sel',listOpts('Repeat Issue')]}
+};
+function editor(m, r, f){
+  const [k, opts] = KIND[m][f] || ['text'];
+  const key = REC[m].key(r), val = r[f] ?? '';
+  const id = `ed-${m}-${key}-${f}`.replace(/[^\w-]/g,'_');
+  const attrs = `id="${id}" data-ed="${m}" data-key="${esc(key)}" data-f="${f}" aria-label="${esc(fieldLabel(m,f))} ${esc(key)}"`;
+  if (k==='area') return `<textarea ${attrs}>${esc(val)}</textarea>`;
+  if (k==='date') return `<input type="date" ${attrs} value="${esc(val)}"${f==='completion'?` max="${TODAY_S}"`:''}>`;
+  if (k==='sel'){ const o = opts(r); return `<select ${attrs}><option value=""></option>${o.map(([v,t])=>`<option value="${esc(v)}"${String(val)===String(v)?' selected':''}>${esc(t)}</option>`).join('')}</select>`; }
+  return `<input type="text" ${attrs} value="${esc(val)}">`;
+}
+function applyEdit(m, key, f, raw){
+  const r = REC[m].find(key); if (!r) return;
+  if (!canEdit(m, f, r)){ toast('You do not have permission to edit this field.'); return; }
+  let v = raw;
+  if (m==='rcm' && (f==='L'||f==='I')) v = Number(raw)||1;
+  if (m==='issue' && f==='repeat' && !r.completion){ toast('Repeat Issue is available only after the issue is closed.'); render(); return; }
+  if (m==='plan' && f==='aEnd' && v && r.aStart && v < r.aStart){ toast('Actual End Date must be after Actual Start Date.'); render(); return; }
+  const old = r[f]; if (String(old??'')===String(v)) return;
+  r[f] = v;
+  if (m==='issue' && f==='completion' && !v) r.repeat = '';
+  if (m==='rcm' && f==='testable' && v==='Y') r.reason = '';
+  if (m==='rcm' && f==='testable' && v==='N') r.operating = '';
+  const disp = x => (f==='pic'||f==='owner'||f==='aic'||f==='validatedBy') ? nm(L.user,x) : x;
+  log(REC[m].mod, key, fieldLabel(m,f), disp(old), disp(v));
+  if (m==='plan' && f==='status' && v==='Final Report Issued' && !r.aEnd) toast('Status saved. Enter the Actual End Date (Final Report Issue Date).');
+  else toast(`Saved ${fieldLabel(m,f)} · ${key}`);
+  render();
+}
+
+/* =========================================================
+   Filters
+   ========================================================= */
+const FILTERS = {
+  dashboard:['from','to','year','company','office','dept','eng'],
+  plan:['pStart','pEnd','year','company','office','dept','status','sched','type'],
+  rcm:['from','to','year','eng','company','office','dept','type','status','sched'],
+  log:['from','to','year','eng','company','office','dept','type','status','sched'],
+  fu:['from','to','year','eng','company','office','dept','istatus']
+};
+const FLABEL = {from:'Start Date',to:'End Date',pStart:'Planned Start Date',pEnd:'Planned End Date',year:'Year',company:'Company',office:'Office',dept:'Department',eng:'Engagement',status:'Engagement Status',sched:'Schedule Status',type:'Engagement Type',istatus:'Issue Status'};
+function engMatch(e, f){
+  if (!inScope(e)) return false;
+  const eff = e.aStart || e.pStart;
+  if (f.from && eff < f.from) return false; if (f.to && eff > f.to) return false;
+  if (f.pStart && e.pStart < f.pStart) return false; if (f.pEnd && e.pEnd > f.pEnd) return false;
+  if (f.year && e.year !== f.year) return false; if (f.company && e.company !== f.company) return false;
+  if (f.office && e.office !== f.office) return false; if (f.dept && !e.depts.includes(f.dept)) return false;
+  if (f.eng && e.code !== f.eng) return false; if (f.status && e.status !== f.status) return false;
+  if (f.sched && schedCalc(e) !== f.sched) return false; if (f.type && e.type !== f.type) return false;
+  return true;
+}
+function fOptions(k, f){
+  const sc = DB.engagements.filter(inScope);
+  switch(k){
+    case 'year': return uniq(DB.engagements.map(e=>e.year)).map(y=>[y,y]);
+    case 'company': return DB.companies.filter(c=>sc.some(e=>e.company===c.code)).map(c=>[c.code,c.name]);
+    case 'office': return DB.offices.filter(o=>(!f.company||o.company===f.company)&&sc.some(e=>e.office===o.code)).map(o=>[o.code,o.name]);
+    case 'dept': return DB.departments.filter(d=>(!f.company||d.company===f.company)&&(!f.office||d.office===f.office)&&sc.some(e=>e.depts.includes(d.code))).map(d=>[d.code,d.name]);
+    case 'eng': return sc.filter(e=>(!f.company||e.company===f.company)&&(!f.office||e.office===f.office)&&(!f.dept||e.depts.includes(f.dept))).map(e=>[e.code,e.code+' · '+e.name]);
+    case 'status': return LV('Engagement Status').map(x=>[x,x]);
+    case 'sched': return LV('Schedule Status').map(x=>[x,x]);
+    case 'type': return LV('Engagement Type').map(x=>[x,x]);
+    case 'istatus': return LV('Issue Status').map(x=>[x,x]);
+  }
+  return [];
+}
+function filterBar(page){
+  const f = S.f[page];
+  return `<div class="filters" data-fpage="${page}">${FILTERS[page].map(k=>{
+    const id = `f-${page}-${k}`;
+    if (['from','to','pStart','pEnd'].includes(k)) return `<div class="f"><label for="${id}">${FLABEL[k]}</label><input type="date" id="${id}" data-fk="${k}" value="${esc(f[k]||'')}"></div>`;
+    return `<div class="f"><label for="${id}">${FLABEL[k]}</label><select id="${id}" data-fk="${k}"><option value="">All</option>${fOptions(k,f).map(([v,t])=>`<option value="${esc(v)}"${f[k]===v?' selected':''}>${esc(t)}</option>`).join('')}</select></div>`;
+  }).join('')}<div class="f reset"><button class="btn" type="button" data-freset="${page}">Clear filters</button></div></div>`;
+}
+function onFilter(page, k, v){
+  const f = S.f[page]; f[k] = v;
+  if (k==='company'){ f.office=''; f.dept=''; f.eng=''; }
+  if (k==='office'){ f.dept=''; f.eng=''; }
+  if (k==='dept'){ f.eng=''; }
+  render();
+}
+
+/* =========================================================
+   UI pieces
+   ========================================================= */
+const PILL = {
+  good:['On track','Final Report Issued','Completed on time','Effective','Active','Low','Y','Completed','Full','Edit'],
+  warn:['At risk','Open - up to 3 months overdue','Draft Report','Completed late','Moderate','Not Tested Yet','Issue raised'],
+  bad:['Delayed','Open - more than 3 months overdue','Ineffective','High','Past due date','No Control','Inactive'],
+  info:['Planning','Fieldwork','Open - on schedule','Unable to Test','Process Improvement'],
+  acc:['Not started','Open','View']
+};
+function pill(t){ if (!t) return ''; const c = Object.keys(PILL).find(k=>PILL[k].includes(t))||''; return `<span class="pill ${c}">${esc(t)}</span>`; }
+const kpi = (l,v,s,c='') => `<div class="kpi ${c}"><span class="l">${esc(l)}</span><span class="v">${v}</span>${s?`<span class="s">${s}</span>`:''}</div>`;
+const legend = items => `<div class="legend">${items.map(([t,c])=>`<span><i style="background:${c}"></i>${esc(t)}</span>`).join('')}</div>`;
+const av = c => `<span class="av" title="${esc(nm(L.user,c))}">${esc(initials(c))}</span>`;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true,2600); }
+
+/* cols: {h, f?, m?, v(r,i), auto, sg, num, wrap, code, cls} — f + m enable permission-aware inline editing and hiding */
+function table(cols, rows, opts={}){
+  const vis = cols.filter(c => !(c.f && c.m) || visible(c.m, c.f));
+  if (!rows.length) return `<div class="tbl"><div class="empty" style="padding:14px">No records match the filters. / Không có dữ liệu phù hợp với bộ lọc.</div></div>`;
+  const th = vis.map(c=>`<th class="${c.cls||''}${c.num?' num':''}">${esc(c.h)}${c.auto?'<span class="tag">auto</span>':''}${c.sg?'<span class="tag sg">suggested</span>':''}</th>`).join('');
+  const tr = rows.map((r,ix)=>`<tr>${vis.map(c=>{
+    const editable = c.f && c.m && canEdit(c.m, c.f, r);
+    const body = editable ? editor(c.m, r, c.f) : c.v(r, ix);
+    return `<td class="${c.cls||''}${c.num?' num':''}${c.wrap&&!editable?' wrap':''}${c.code?' code':''}${editable?' ed':''}">${body}</td>`;
+  }).join('')}</tr>`).join('');
+  return `<div class="tbl"><table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+}
+function permNote(m){
+  const r = me().role, eds = FIELDS[m].rows.filter(([k])=>['Edit','Edit (own)'].includes(fpv(m,k))).map(x=>x[1]);
+  if (!eds.length) return `<div class="banner">You can view this screen. No fields are editable for the role <b>${esc(r)}</b>.<br><span class="vi">Vai trò ${esc(r)} chỉ được xem màn hình này.</span></div>`;
+  const own = FIELDS[m].rows.some(([k])=>fpv(m,k)==='Edit (own)');
+  return `<div class="banner">As <b>${esc(r)}</b> you can edit highlighted cells directly in the table${own?(r==='Auditee'?' for your own department':' for engagements assigned to you'):''}: ${esc(eds.join(', '))}. Every change is written to the Audit Trail.<br><span class="vi">Ô tô màu là ô bạn được sửa trực tiếp trên bảng. Mọi thay đổi được ghi vào nhật ký.</span></div>`;
+}
+
+/* =========================================================
+   Charts
+   ========================================================= */
+const C = {acc:'var(--accent)',good:'var(--good)',warn:'var(--warn)',bad:'var(--bad)',info:'var(--info)',muted:'var(--muted)',soft:'var(--neutral-soft)'};
+function hbars(rows){
+  if (!rows.length || rows.every(r=>!r.v)) return '<div class="empty">No data / Không có dữ liệu</div>';
+  const W=480, LW=150, RH=26, max=Math.max(...rows.map(r=>r.v),1), H=rows.length*RH+6, bw=W-LW-40;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${rows.map((r,i)=>{const y=i*RH+4,w=Math.max(r.v?3:0,r.v/max*bw);
+    return `<text class="lab" x="${LW-8}" y="${y+14}" text-anchor="end">${esc(r.l)}</text><rect x="${LW}" y="${y+3}" width="${bw}" height="16" rx="3" style="fill:var(--neutral-soft)"/><rect x="${LW}" y="${y+3}" width="${w}" height="16" rx="3" style="fill:${r.c||C.acc}"/><text class="val" x="${LW+w+6}" y="${y+15}">${r.v}</text>`;}).join('')}</svg>`;
+}
+function stacked(rows, keys){
+  if (!rows.length) return '<div class="empty">No data / Không có dữ liệu</div>';
+  const W=480, LW=150, RH=28, H=rows.length*RH+6, bw=W-LW-36, max=Math.max(...rows.map(r=>keys.reduce((s,k)=>s+(r.v[k.k]||0),0)),1);
+  return legend(keys.map(k=>[k.l,k.c])) + `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${rows.map((r,i)=>{
+    const y=i*RH+4; let x=LW; const tot=keys.reduce((s,k)=>s+(r.v[k.k]||0),0);
+    const segs = keys.map(k=>{const v=r.v[k.k]||0; if(!v) return ''; const w=v/max*bw; const s=`<rect x="${x}" y="${y+3}" width="${Math.max(w-1,1)}" height="18" style="fill:${k.c}"><title>${esc(k.l)}: ${v}</title></rect>${w>16?`<text x="${x+w/2}" y="${y+16}" text-anchor="middle" style="fill:var(--panel);font-size:10.5px;font-weight:600">${v}</text>`:''}`; x+=w; return s;}).join('');
+    return `<text class="lab" x="${LW-8}" y="${y+16}" text-anchor="end">${esc(r.l)}</text>${segs}<text class="val" x="${x+6}" y="${y+16}">${tot}</text>`;}).join('')}</svg>`;
+}
+function cumLine(engs){
+  const live = engs.filter(e=>!['Cancelled','Deferred'].includes(e.status)), curM = TODAY.getMonth();
+  let p=0,a=0; const P=[],A=[];
+  for (let m=0;m<12;m++){ p+=cnt(live,e=>D(e.pEnd).getMonth()===m); P.push(p); a+=cnt(live,e=>e.aEnd&&D(e.aEnd).getMonth()===m); A.push(m<=curM?a:null); }
+  const W=480,H=200,l=30,r=14,t=14,b=28,max=Math.max(...P,1), X=m=>l+m*(W-l-r)/11, Y=v=>t+(H-t-b)*(1-v/max);
+  const path = arr => arr.map((v,m)=>v==null?'':`${m&&arr[m-1]!=null?'L':'M'}${X(m).toFixed(1)},${Y(v).toFixed(1)}`).join('');
+  const la = A.reduce((k,v,i)=>v!=null?i:k,0);
+  return legend([['Planned (cumulative)',C.muted],['Actual reports issued',C.acc]]) + `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">
+   ${[0,Math.ceil(max/2),max].map(v=>`<line x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line-soft)"/><text x="${l-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`).join('')}
+   ${MON.map((mn,m)=>`<text x="${X(m)}" y="${H-8}" text-anchor="middle">${mn}</text>`).join('')}
+   <path d="${path(P)}" style="fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:5 4"/><path d="${path(A)}" style="fill:none;stroke:var(--accent);stroke-width:2.5"/>
+   <circle cx="${X(la)}" cy="${Y(A[la])}" r="4" style="fill:var(--accent)"/><text class="val" x="${X(la)+7}" y="${Y(A[la])+4}">${A[la]} of ${P[la]}</text></svg>`;
+}
+function gantt(engs){
+  if (!engs.length) return '<div class="empty">No data / Không có dữ liệu</div>';
+  const W=820, LW=200, RH=24, t=22, H=t+engs.length*RH+8, y0=new Date(2026,0,1), y1=new Date(2026,11,31);
+  const X = d => LW+(W-LW-10)*Math.min(Math.max((d-y0)/(y1-y0),0),1), col = s => ({'On track':C.good,'At risk':C.warn,'Delayed':C.bad})[s]||C.muted;
+  return legend([['Planned period',C.soft],['Actual – On track',C.good],['Actual – At risk',C.warn],['Actual – Delayed',C.bad]]) +
+  `<div class="scroll"><svg class="chart" viewBox="0 0 ${W} ${H}" style="min-width:640px;max-width:none" role="img">
+   ${MON.map((m,i)=>{const x=X(new Date(2026,i,1)); return `<line x1="${x}" x2="${x}" y1="${t-4}" y2="${H}" style="stroke:var(--line-soft)"/><text x="${x+4}" y="${t-8}">${m}</text>`;}).join('')}
+   ${engs.map((e,i)=>{const y=t+i*RH, s=schedCalc(e);
+     return `<text class="lab" x="${LW-8}" y="${y+16}" text-anchor="end">${esc(e.code)} ${esc(e.name.length>18?e.name.slice(0,17)+'…':e.name)}</text>
+     <rect x="${X(D(e.pStart))}" y="${y+4}" width="${Math.max(X(D(e.pEnd))-X(D(e.pStart)),2)}" height="15" rx="3" style="fill:var(--neutral-soft);stroke:var(--line)"/>
+     ${e.aStart?`<rect x="${X(D(e.aStart))}" y="${y+8}" width="${Math.max(X(e.aEnd?D(e.aEnd):TODAY)-X(D(e.aStart)),2)}" height="7" rx="2" style="fill:${col(s)}"/>`:''}`;}).join('')}
+   <line x1="${X(TODAY)}" x2="${X(TODAY)}" y1="${t-4}" y2="${H}" style="stroke:var(--accent);stroke-dasharray:4 3"/><text x="${X(TODAY)+4}" y="${H-4}" style="fill:var(--accent)">Today</text></svg></div>`;
+}
+
+/* =========================================================
+   Header
+   ========================================================= */
+function header(en, vi){
+  const u = me();
+  const opts = ROLES.map(role=>`<optgroup label="${role}">${DB.users.filter(x=>x.role===role&&x.status==='Active').map(x=>`<option value="${x.code}"${x.code===S.user?' selected':''}>${esc(x.name)} — ${esc(x.title)}</option>`).join('')}</optgroup>`).join('');
+  const sc = u.scope==='All'?'All companies':u.scope==='Company'?nm(L.company,u.company):u.scope==='Office'?nm(L.office,u.office):nm(L.dept,u.dept)+' ('+nm(L.office,u.office)+')';
+  const who = `<div class="who"><label for="whoSel">View as / Xem với vai trò</label><select id="whoSel">${opts}</select><div class="scope">Role: <b>${esc(u.role)}</b> · Data scope: <b>${esc(sc)}</b></div></div>`;
+  if (en === null) return who;
+  return `<div class="top"><div><h1>${esc(en)}</h1><div class="vi">${esc(vi)}</div></div>${who}</div>`;
+}
+
+/* =========================================================
+   Dashboard
+   ========================================================= */
+function viewDashboard(){
+  const engs = DB.engagements.filter(e=>engMatch(e,S.f.dashboard)), codes = new Set(engs.map(e=>e.code));
+  const rcm = DB.rcm.filter(r=>codes.has(r.eng)).map(r=>({...r,c:rcmCalc(r)}));
+  const iss = DB.issues.filter(i=>codes.has(i.eng)).map(i=>({...i,c:issueCalc(i)}));
+  const sec = S.dashSec;
+  const jump = `<div class="chips">${[['all','All sections'],['plan','Annual Plan'],['rcm','Risk Control Matrix'],['log','Issue Log']].map(([k,t])=>`<button type="button" class="chip" data-sec="${k}" aria-pressed="${sec===k}">${t}</button>`).join('')}</div>`;
+  const live = engs.filter(e=>!['Cancelled','Deferred'].includes(e.status)), issued = cnt(live,e=>e.aEnd), sch = engs.map(schedCalc);
+  const A = `<section class="section"><div class="sechead"><h2>Annual Plan</h2><q>How far along is the plan? Which engagements are late? — Kế hoạch đã thực hiện tới đâu? Cuộc nào đang trễ?</q></div>
+   <div class="kpis">${kpi('Plan completion rate',pct(issued,live.length),`${issued} of ${live.length} reports issued`,'acc')}${kpi('Delayed engagements',cnt(sch,s=>s==='Delayed'),'Past planned end date','bad')}
+     ${kpi('At-risk engagements',cnt(sch,s=>s==='At risk'),'Due within 14 days','warn')}${kpi('Ad-hoc engagements',cnt(engs,e=>e.type==='Ad-hoc'),'Outside the approved plan')}</div>
+   <div class="grid2"><div class="panel"><h3 class="h3wrap">Engagements by Status<small>Số cuộc kiểm toán theo trạng thái</small></h3>${hbars(LV('Engagement Status').map(s=>({l:s,v:cnt(engs,e=>e.status===s),c:({'Final Report Issued':C.good,'Draft Report':C.warn,'Cancelled':C.muted,'Deferred':C.muted,'Not started':C.muted})[s]||C.acc})))}</div>
+     <div class="panel"><h3 class="h3wrap">Cumulative Planned vs Actual<small>Kế hoạch so với thực tế, lũy kế theo tháng</small></h3>${cumLine(engs)}</div></div>
+   <div class="panel"><h3 class="h3wrap">Engagement timeline<small>Gantt: khung xám là kế hoạch, thanh màu là thực tế</small></h3>${gantt(engs)}</div>
+   <div class="panel"><h3 class="h3wrap">Engagement list<small>Bấm vào mã để mở hồ sơ cuộc kiểm toán</small></h3>${table([
+     {h:'Code',v:e=>can('plan')?`<button class="link" type="button" data-eng="${e.code}">${esc(e.code)}</button>`:esc(e.code),code:1},{h:'Engagement',v:e=>esc(e.name)},
+     {h:'Department',v:e=>esc(e.depts.map(d=>nm(L.dept,d)).join(', '))},{h:'Planned End',v:e=>fd(e.pEnd)},{h:'Status',v:e=>pill(e.status)},{h:'Schedule',v:e=>pill(schedCalc(e)),auto:1},
+     {h:'Issues',v:e=>engCounts(e).n,num:1},{h:'Open',v:e=>engCounts(e).open,num:1},{h:'Overdue',v:e=>engCounts(e).over,num:1}],engs)}</div></section>`;
+
+  const ctrls = rcm.filter(r=>r.ctrl), tested = ctrls.filter(r=>r.testable==='Y'&&r.operating), eff = cnt(ctrls,r=>r.c.overall==='Effective'),
+        untest = cnt(ctrls,r=>r.testable==='N'), gaps = cnt(rcm,r=>!r.ctrl), highWeak = cnt(rcm,r=>r.c.rating==='High'&&['Ineffective','Unable to Test','No Control'].includes(r.c.overall));
+  const procs = uniq(rcm.map(r=>r.process));
+  const ovK = [{k:'Effective',l:'Effective',c:C.good},{k:'Ineffective',l:'Ineffective',c:C.bad},{k:'Unable to Test',l:'Unable to Test',c:C.info},{k:'Not Tested Yet',l:'Not Tested Yet',c:C.warn},{k:'No Control',l:'No Control',c:C.muted}];
+  let heat = `<div class="heat"><div class="ax"></div>${[1,2,3].map(i=>`<div class="ax">Impact ${i}</div>`).join('')}`;
+  for (let l=3;l>=1;l--){ heat += `<div class="ax">Likelihood ${l}</div>`; for (let i=1;i<=3;i++){ const cell=rcm.filter(r=>r.L===l&&r.I===i), weak=cnt(cell,r=>r.c.overall!=='Effective'), sc=l*i;
+    heat += `<div class="cell ${cell.length?(sc>=6?'r3':sc>=3?'r2':'r1'):''}">${cell.length?`<b>${cell.length}</b>${weak?`<span class="w">${weak} not effective</span>`:'<span>all effective</span>'}`:'<span>–</span>'}</div>`; } }
+  heat += '</div>';
+  const sumRow = (l,arr) => ({l, risks:arr.length, ctrls:cnt(arr,r=>r.ctrl), eff:cnt(arr,r=>r.c.overall==='Effective'), ineff:cnt(arr,r=>r.c.overall==='Ineffective'), unt:cnt(arr,r=>r.c.overall==='Unable to Test'), nty:cnt(arr,r=>r.c.overall==='Not Tested Yet'), gap:cnt(arr,r=>!r.ctrl)});
+  const sumCols = h => [{h,v:r=>esc(r.l)},{h:'Risks',v:r=>r.risks,num:1},{h:'Controls',v:r=>r.ctrls,num:1},{h:'Effective',v:r=>r.eff,num:1},{h:'Ineffective',v:r=>r.ineff,num:1},{h:'Unable to test',v:r=>r.unt,num:1},{h:'Control gaps',v:r=>r.gap,num:1},{h:'Effective %',v:r=>pct(r.eff,r.ctrls-r.unt-r.nty),num:1}];
+  const R = `<section class="section"><div class="sechead"><h2>Risk Control Matrix</h2><q>Which important risks are not well controlled, and in which processes? — Rủi ro quan trọng nào chưa được kiểm soát tốt?</q></div>
+   <div class="kpis">${kpi('Total risks',rcm.length,'','acc')}${kpi('Total controls',ctrls.length,'')}${kpi('Controls tested',pct(tested.length,ctrls.length),`${tested.length} of ${ctrls.length}`)}
+     ${kpi('Effective controls',pct(eff,tested.length),'of tested controls','good')}${kpi('Untestable controls',pct(untest,ctrls.length),`${untest} controls`,'warn')}
+     ${kpi('Control gaps',gaps,'Risks without any control','bad')}${kpi('High risks not covered',highWeak,'Ineffective, untestable or no control','bad')}</div>
+   <div class="grid2"><div class="panel"><h3 class="h3wrap">Risk heatmap: Likelihood × Impact<small>Màu theo điểm rủi ro; chữ đỏ là số kiểm soát chưa hiệu quả</small></h3>${heat}</div>
+     <div class="panel"><h3 class="h3wrap">Control results by process<small>Kết quả kiểm soát theo quy trình</small></h3>${stacked(procs.map(p=>({l:nm(L.proc,p),v:Object.fromEntries(ovK.map(k=>[k.k,cnt(rcm,r=>r.process===p&&r.c.overall===k.k)]))})),ovK)}</div>
+     <div class="panel"><h3 class="h3wrap">Control mix by process<small>Thủ công / Tự động / Phụ thuộc IT</small></h3>${stacked(procs.map(p=>({l:nm(L.proc,p),v:{Manual:cnt(ctrls,r=>r.process===p&&r.ctype==='Manual'),Automated:cnt(ctrls,r=>r.process===p&&r.ctype==='Automated'),'IT-dependent':cnt(ctrls,r=>r.process===p&&r.ctype==='IT-dependent')}})).filter(r=>Object.values(r.v).some(Boolean)),[{k:'Manual',l:'Manual',c:C.warn},{k:'Automated',l:'Automated',c:C.good},{k:'IT-dependent',l:'IT-dependent',c:C.acc}])}</div>
+     <div class="panel"><h3 class="h3wrap">Preventive vs Detective<small>Kiểm soát ngăn chặn so với phát hiện</small></h3>${hbars([{l:'Preventive',v:cnt(ctrls,r=>r.nature==='Preventive'),c:C.acc},{l:'Detective',v:cnt(ctrls,r=>r.nature==='Detective'),c:C.info}])}</div></div>
+   <div class="grid2"><div class="panel"><h3 class="h3wrap">Summary by process<small>Tổng hợp theo quy trình</small></h3>${table(sumCols('Process'),procs.map(p=>sumRow(nm(L.proc,p),rcm.filter(r=>r.process===p))))}</div>
+     <div class="panel"><h3 class="h3wrap">Summary by engagement<small>Tổng hợp theo cuộc kiểm toán</small></h3>${table(sumCols('Engagement'),uniq(rcm.map(r=>r.eng)).map(c=>sumRow(c,rcm.filter(r=>r.eng===c))))}</div></div></section>`;
+
+  const open = iss.filter(i=>i.c.open), over = iss.filter(i=>i.c.overdueNow), closed = iss.filter(i=>!i.c.open);
+  const ratK=[{k:'High',l:'High',c:C.bad},{k:'Moderate',l:'Moderate',c:C.warn},{k:'Low',l:'Low',c:C.good},{k:'Process Improvement',l:'Process Improvement',c:C.info}];
+  const stK=[{k:'Open - on schedule',l:'Open – on schedule',c:C.info},{k:'Open - up to 3 months overdue',l:'Open – up to 3 months overdue',c:C.warn},{k:'Open - more than 3 months overdue',l:'Open – more than 3 months overdue',c:C.bad},{k:'Completed on time',l:'Completed on time',c:C.good},{k:'Completed late',l:'Completed late',c:C.muted}];
+  const deptOf = i => (L.user(i.pic)||{}).dept||'';
+  const aging=[['Not due',i=>!i.c.overdueNow],['1–30 days',i=>i.c.overdueNow&&i.c.days<=30],['31–60 days',i=>i.c.overdueNow&&i.c.days>30&&i.c.days<=60],['> 60 days',i=>i.c.overdueNow&&i.c.days>60]];
+  const upcoming = open.filter(i=>{const n=dd(D(i.c.curDue),TODAY); return n>=0&&n<=30;}).sort((a,b)=>a.c.curDue<b.c.curDue?-1:1), ext = iss.filter(i=>i.revised);
+  const I = `<section class="section"><div class="sechead"><h2>Issue Log</h2><q>Are issues fixed on time, and who is falling behind? — Phát hiện có được khắc phục đúng hạn không?</q></div>
+   <div class="kpis">${kpi('Total issues',iss.length,'','acc')}${kpi('Open issues',open.length,pct(open.length,iss.length)+' of total','warn')}
+     ${kpi('Overdue issues',over.length,pct(over.length,iss.length)+' of total (part of Open)','bad')}${kpi('Closed issues',closed.length,pct(closed.length,iss.length)+' of total','good')}</div>
+   <div class="grid2"><div class="panel"><h3 class="h3wrap">Issues by rating and process<small>Phát hiện theo mức độ và quy trình</small></h3>${stacked(uniq(iss.map(i=>i.process)).map(p=>({l:nm(L.proc,p),v:Object.fromEntries(ratK.map(k=>[k.k,cnt(iss,i=>i.process===p&&i.rating===k.k)]))})),ratK)}</div>
+     <div class="panel"><h3 class="h3wrap">Issues by type<small>Phát hiện theo loại</small></h3>${hbars(LV('Issue Type').map(t=>({l:t.replace('Control ',''),v:cnt(iss,i=>i.type===t)})))}</div>
+     <div class="panel"><h3 class="h3wrap">Root cause analysis<small>Con người, quy trình, hệ thống, chính sách</small></h3>${hbars(LV('Root Cause Category').map(t=>({l:t,v:cnt(iss,i=>i.rootCat===t),c:C.info})))}</div>
+     <div class="panel"><h3 class="h3wrap">Overdue aging of open issues<small>Tuổi quá hạn của phát hiện còn mở</small></h3>${hbars(aging.map(([l,f],k)=>({l,v:cnt(open,f),c:[C.info,C.warn,C.bad,C.bad][k]})))}</div></div>
+   <div class="grid2"><div class="panel"><h3 class="h3wrap">Issue status by department<small>Trạng thái phát hiện theo phòng ban</small></h3>${stacked(uniq(iss.map(deptOf)).map(d=>({l:nm(L.dept,d),v:Object.fromEntries(stK.map(k=>[k.k,cnt(iss,i=>deptOf(i)===d&&i.c.status===k.k)]))})),stK)}</div>
+     <div class="panel"><h3 class="h3wrap">Upcoming due dates (next 30 days)<small>Đến hạn trong 30 ngày tới</small></h3>${upcoming.length?`<div class="list">${upcoming.map(i=>`<div class="row"><span style="font-family:var(--font-mono);font-size:12px">${esc(i.code)}</span><span>${esc(i.obs)}<br><small style="color:var(--muted)">${esc(nm(L.user,i.pic))}</small></span><span>${fd(i.c.curDue)}</span></div>`).join('')}</div>`:'<div class="empty">Nothing due in the next 30 days.</div>'}
+       <h3 class="h3wrap" style="margin-top:8px">Extensions<small>Phát hiện đã được gia hạn</small></h3>${ext.length?`<div class="list">${ext.map(i=>`<div class="row"><span style="font-family:var(--font-mono);font-size:12px">${esc(i.code)}</span><span>${esc(i.obs)}</span><span>${fd(i.due)} → <b>${fd(i.revised)}</b></span></div>`).join('')}</div>`:'<div class="empty">No extensions.</div>'}</div></div></section>`;
+  return header('Dashboard','Tổng quan kiểm toán nội bộ') + filterBar('dashboard') + jump + (sec==='all'||sec==='plan'?A:'') + (sec==='all'||sec==='rcm'?R:'') + (sec==='all'||sec==='log'?I:'');
+}
+
+/* =========================================================
+   Annual Plan
+   ========================================================= */
+function planCols(){
+  return [
+    {h:'No.',v:(e,i)=>i+1,num:1},
+    {h:'Engagement Code',v:e=>`<button class="link" type="button" data-eng="${e.code}" style="font-family:var(--font-mono);font-size:12px">${esc(e.code)}</button>`},
+    {h:'Engagement Type',f:'type',m:'plan',v:e=>esc(e.type)},{h:'Engagement Name',f:'name',m:'plan',v:e=>esc(e.name)},
+    {h:'Company',f:'company',m:'plan',v:e=>esc(nm(L.company,e.company))},{h:'Office',f:'office',m:'plan',v:e=>esc(nm(L.office,e.office))},
+    {h:'Department',f:'depts',m:'plan',v:e=>esc(e.depts.map(d=>nm(L.dept,d)).join(', '))},
+    {h:'Planned Start Date',f:'pStart',m:'plan',v:e=>fd(e.pStart)},{h:'Planned End Date',f:'pEnd',m:'plan',v:e=>fd(e.pEnd)},
+    {h:'Audit Scope',f:'scope',m:'plan',v:e=>esc(nm(L.scope,e.scope))},{h:'Auditor In Charge',f:'aic',m:'plan',v:e=>esc(nm(L.user,e.aic))},
+    {h:'Team members',f:'team',m:'plan',v:e=>esc(e.team.map(t=>nm(L.user,t)).join(', '))},{h:'Process Owner',f:'owner',m:'plan',v:e=>esc(nm(L.user,e.owner))},
+    {h:'Engagement Priority',f:'priority',m:'plan',v:e=>pill(e.priority)},
+    {h:'Engagement Status',f:'status',m:'plan',v:e=>pill(e.status),cls:'fu'},{h:'Schedule Status',v:e=>pill(schedCalc(e)),auto:1,cls:'fu'},
+    {h:'Actual Start Date',f:'aStart',m:'plan',v:e=>fd(e.aStart),cls:'fu'},{h:'Actual End Date',f:'aEnd',m:'plan',v:e=>fd(e.aEnd),cls:'fu'},
+    {h:'Number of Issues',v:e=>engCounts(e).n,num:1,auto:1},{h:'High',v:e=>engCounts(e).high,num:1,auto:1},{h:'Moderate',v:e=>engCounts(e).mod,num:1,auto:1},
+    {h:'Low',v:e=>engCounts(e).low,num:1,auto:1},{h:'Process Improvement',v:e=>engCounts(e).pi,num:1,auto:1},{h:'Open',v:e=>engCounts(e).open,num:1,auto:1},
+    {h:'Overdue',v:e=>engCounts(e).over,num:1,auto:1},{h:'Closed',v:e=>engCounts(e).closed,num:1,auto:1}];
+}
+/* company / office / departments / team are edited in the form so the cascade stays valid */
+['company','office','depts','team'].forEach(f=>{ KIND.plan[f] = null; });
+const _canEdit = canEdit;
+canEdit = function(m,f,r){ if (m==='plan' && ['company','office','depts','team'].includes(f)) return false; return _canEdit(m,f,r); };
+
+function viewPlan(){
+  const engs = DB.engagements.filter(e=>engMatch(e,S.f.plan));
+  const canAdd = mp('plan')==='Full';
+  return header('Annual Plan','Kế hoạch kiểm toán năm') + filterBar('plan') + permNote('plan') +
+    `<div class="toolbar"><span class="count">${engs.length} engagements · Click a code to open the engagement file. / Bấm vào mã để mở hồ sơ cuộc kiểm toán.</span>
+     <button class="btn primary" type="button" id="addEng"${canAdd?'':' disabled title="Only roles with Full access to Annual Plan can create engagements"'}>+ New engagement</button></div>` + table(planCols(), engs);
+}
+
+/* =========================================================
+   Engagement file (detail page)
+   ========================================================= */
+const MSF = [['Start planning',0],['Start fieldwork',.2],['Complete fieldwork',.65],['Issue draft report',.82],['Publish final report',1]];
+const REACHED = {'Not started':0,'Planning':1,'Fieldwork':2,'Draft Report':3,'Final Report Issued':5,'Cancelled':0,'Deferred':0};
+function milestones(e){
+  const ps=D(e.pStart), pe=D(e.pEnd), span=pe-ps, reached=REACHED[e.status]??0;
+  const as=e.aStart?D(e.aStart):null, ae=e.aEnd?D(e.aEnd):null, delay=as?dd(as,ps):0;
+  return MSF.map(([l,f],i)=>{
+    const p = dayOnly(new Date(ps.getTime()+span*f));
+    let a = null;
+    if (i < reached){
+      if (i===0 && as) a = as;
+      else if (as && ae) a = dayOnly(new Date(as.getTime()+(ae-as)*f));
+      else a = dayOnly(new Date(p.getTime()+delay*86400000));
+      if (a > TODAY) a = TODAY;
+    }
+    return {l, p, a, diff: a ? dd(a,p) : null, od: !a && p < TODAY && !['Cancelled','Deferred'].includes(e.status) ? dd(TODAY,p) : 0};
+  });
+}
+function keyDates(e){
+  const ms = milestones(e);
+  return `<div class="kd">${ms.map((m,i)=>{
+    const cls = m.a ? (m.diff>0?'late':'early') : (m.od?'od':'');
+    const badge = m.a ? (m.diff>0?`<span class="badge">${m.diff} day${m.diff>1?'s':''} late</span>`:m.diff<0?`<span class="badge early">${-m.diff} day${m.diff<-1?'s':''} early</span>`:`<span class="badge early">On time</span>`)
+                      : (m.od?`<span class="badge od">${m.od} day${m.od>1?'s':''} overdue</span>`:'');
+    const lab = `<div class="lab">${esc(m.l)}<b>${fdD(m.a||m.p)}</b>${m.a?`<span class="pl">Planned ${fdD(m.p)}</span><br>`:'<span class="pl">Planned</span><br>'}${badge}</div>`;
+    const left = i%2===0;
+    return `<div class="ms"><div class="left">${left?lab:''}</div><div class="rail2"><span class="dot ${cls}" title="${esc(m.l)}"></span></div><div>${left?'':lab}</div></div>`;
+  }).join('')}</div>`;
+}
+function methodology(e){
+  const steps = ['Planning','Fieldwork','Reporting','Wrap Up'];
+  const cur = {'Not started':-1,'Planning':0,'Fieldwork':1,'Draft Report':2,'Final Report Issued':3,'Cancelled':-2,'Deferred':-2}[e.status];
+  const allClosed = engCounts(e).open===0;
+  return `<div class="stepper">${steps.map((s,i)=>{
+    let st = 'todo';
+    if (cur>=0){ if (i<cur) st='done'; else if (i===cur) st = (i===3&&allClosed)?'done':'cur'; }
+    const icon = st==='done'?'✓':st==='cur'?'•••':'';
+    return `<div class="step ${st}"><div class="node" aria-hidden="true">${icon}</div><span>${s}</span></div>`;
+  }).join('')}</div>${cur===-2?`<div class="empty">This engagement is ${esc(e.status.toLowerCase())}.</div>`:''}
+  <div class="empty" style="padding:0">Wrap Up = issue follow-up after the final report; it completes when every issue is closed.</div>`;
+}
+const ICON = {
+  sub:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg>',
+  risk:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/><path d="M3 19h18"/></svg>',
+  ctrl:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
+  iss:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="M9 13l2 2 4-4"/></svg>',
+  folder:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>'
+};
+function execStats(e){
+  const rows = DB.rcm.filter(r=>r.eng===e.code).map(r=>({...r,c:rcmCalc(r)}));
+  const subs = uniq(rows.map(r=>r.sub)), done = r => r.c.overall!=='Not Tested Yet';
+  const ctrls = rows.filter(r=>r.ctrl), cDone = ctrls.filter(r=>r.testable==='N'||r.operating);
+  const iss = DB.issues.filter(i=>i.eng===e.code).map(i=>({...i,c:issueCalc(i)}));
+  return {rows, subs, subDone:cnt(subs,s=>rows.filter(r=>r.sub===s).every(done)), risks:rows.length, riskDone:cnt(rows,done), ctrls:ctrls.length, ctrlDone:cDone.length,
+    iss:iss.length, issClosed:cnt(iss,i=>!i.c.open), pct: rows.length+ctrls.length ? Math.round((cnt(rows,done)+cDone.length)*100/(rows.length+ctrls.length)) : 0};
+}
+function execSummary(e){
+  const s = execStats(e);
+  if (!s.rows.length) return `<div class="empty">No risks or controls have been added to this engagement yet. / Chưa có rủi ro, kiểm soát nào.</div>`;
+  const cnts = [[ICON.sub,`${s.subDone}/${s.subs.length}`,'Sub-processes completed'],[ICON.risk,`${s.riskDone}/${s.risks}`,'Risks assessed'],[ICON.ctrl,`${s.ctrlDone}/${s.ctrls}`,'Controls tested'],[ICON.iss,`${s.issClosed}/${s.iss}`,'Issues closed']];
+  return `<div class="prog"><div class="pct" style="left:clamp(0px,calc(${s.pct}% - 18px),calc(100% - 36px))">${s.pct}%</div><div class="bar" role="progressbar" aria-valuenow="${s.pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${s.pct}%"></i></div></div>
+   <div class="counters">${cnts.map(([ic,v,l])=>`<div class="counter"><span class="ic" aria-hidden="true">${ic}</span><span><b>${v}</b><small>${l}</small></span></div>`).join('')}</div>`;
+}
+const RATECOL = {High:'var(--bad)',Moderate:'var(--warn)',Low:'var(--good)'};
+function residualCol(r){ const o=r.c.overall; if (o==='Effective') return 'color-mix(in srgb,var(--good) 55%,var(--panel))'; if (o==='Ineffective'||o==='No Control') return RATECOL[r.c.rating]; return 'var(--grey)'; }
+const rowStatus = r => r.issue ? 'Issue raised' : r.c.overall==='Not Tested Yet' ? 'Open' : 'Completed';
+function execTree(e){
+  const s = execStats(e);
+  if (!s.rows.length) return '';
+  const q = S.xq.toLowerCase();
+  const match = r => (!q || (r.riskCode+' '+r.riskDesc+' '+r.ctrl+' '+r.ctrlDesc).toLowerCase().includes(q)) && (!S.xo || r.owner===S.xo) && (!S.xs || rowStatus(r)===S.xs);
+  const rcmEd = f => FIELDS.rcm.rows.find(x=>x[0]===f) && visible('rcm',f);
+  let html = '';
+  s.subs.forEach(sub=>{
+    const kids = s.rows.filter(r=>r.sub===sub && match(r)); if (!kids.length) return;
+    const all = s.rows.filter(r=>r.sub===sub), done = all.every(r=>r.c.overall!=='Not Tested Yet'), coll = S.closed.has(e.code+sub);
+    html += `<tr><td><div class="tt"><button class="tg" type="button" data-tsub="${esc(e.code+sub)}" aria-expanded="${!coll}" aria-label="Toggle ${esc(nm(L.proc,sub))}">${coll?'▸':'▾'}</button>
+      <span class="sic ${done?'ok':''}">${done?'✓':'•••'}</span><span class="tico">${ICON.sub}</span><span class="ttl">${esc(sub)} – ${esc(nm(L.proc,sub))}</span></div></td>
+      <td></td><td>${av(e.owner)}</td><td>${pill(done?'Completed':'Open')}</td><td class="num" style="color:var(--muted)">${all.length} risks</td></tr>`;
+    if (coll) return;
+    kids.forEach(r=>{
+      const st = rowStatus(r), op = S.open.has(r.riskCode);
+      html += `<tr><td><div class="tt" style="padding-left:26px"><button class="tg" type="button" data-trisk="${esc(r.riskCode)}" aria-expanded="${op}" aria-label="Details ${esc(r.riskCode)}">${op?'▾':'▸'}</button>
+        <span class="sic ${st==='Completed'?'ok':st==='Issue raised'?'iss':''}">${st==='Open'?'•••':'✓'}</span><span class="tico">${ICON.risk}</span>
+        <span class="ttl l2">${esc(r.riskCode)} – ${esc(r.riskDesc)}</span></div></td>
+        <td><span class="outc" title="Inherent ${esc(r.c.rating)} → ${esc(r.c.overall)}"><i style="background:${RATECOL[r.c.rating]}"></i>→<i style="background:${residualCol(r)}"></i></span></td>
+        <td>${r.owner?av(r.owner):'<span class="pill bad">No control</span>'}</td><td>${pill(st)}</td>
+        <td class="num"><button class="link" type="button" data-trisk="${esc(r.riskCode)}">${op?'Hide':'Details'}</button></td></tr>`;
+      if (op){
+        const real = DB.rcm.find(x=>x.riskCode===r.riskCode);
+        const fld = (f, label, disp, full) => !visible('rcm',f) ? '' :
+          `<div class="fld${full?' full':''}"><span class="k">${esc(label)}</span>${canEdit('rcm',f,real)?editor('rcm',real,f):disp}</div>`;
+        html += `<tr class="det"><td colspan="5"><div class="detgrid">
+          ${fld('riskDesc','Risk Description',esc(r.riskDesc),1)}
+          ${fld('cat','Risk Category',esc(r.cat))}${fld('L','Risk Likelihood',r.L)}${fld('I','Risk Impact',r.I)}
+          <div class="fld"><span class="k">Risk Score / Rating · auto</span>${r.c.score} · ${pill(r.c.rating)}</div>
+          <div class="fld"><span class="k">Control Code</span>${r.ctrl?`<span style="font-family:var(--font-mono)">${esc(r.ctrl)}</span>`:pill('No Control')}</div>
+          ${fld('ctrlDesc','Control Description',esc(r.ctrlDesc)||'—',1)}
+          ${fld('freq','Control Frequency',esc(r.freq))}${fld('nature','Control Nature',esc(r.nature))}${fld('ctype','Control Type',esc(r.ctype))}${fld('owner','Control Owner',esc(nm(L.user,r.owner)))}
+          ${fld('design','Design Effectiveness',pill(r.design))}${fld('testable','Testable',esc(r.testable))}
+          ${r.testable==='N'?fld('reason','Reason not tested',esc(r.reason)):fld('operating','Operating Effectiveness',pill(r.operating)||'—')}
+          <div class="fld"><span class="k">Overall Conclusion · auto</span>${pill(r.c.overall)}</div>
+          ${fld('program','Audit program',esc(r.program))}${fld('issue','Issue Code',esc(r.issue)||'—')}${fld('wp','WP ref',esc(r.wp))}
+        </div></td></tr>`;
+      }
+    });
+  });
+  return html ? `<div class="tbl tree"><table><thead><tr><th>Title</th><th>Outcome</th><th>Owner</th><th>Status</th><th class="num">Actions</th></tr></thead><tbody>${html}</tbody></table></div>`
+              : `<div class="tbl"><div class="empty" style="padding:14px">No rows match the search. / Không có dòng phù hợp.</div></div>`;
+}
+function issueCols(ctx){
+  const C2 = [
+    {h:'Issue Code',v:r=>esc(r.code),code:1},
+    ...(ctx==='log'?[{h:'Engagement Code',v:r=>can('plan')?`<button class="link" type="button" data-eng="${r.eng}" style="font-family:var(--font-mono);font-size:12px">${esc(r.eng)}</button>`:esc(r.eng)},{h:'Engagement Name',v:r=>esc(nm(L.eng,r.eng))}]:[]),
+    {h:'Process Name',v:r=>esc(nm(L.proc,r.process))},{h:'Sub-Process',v:r=>esc(nm(L.proc,r.sub))},
+    {h:'Observation',f:'obs',m:'issue',v:r=>esc(r.obs),wrap:1},{h:'Issue Rating',f:'rating',m:'issue',v:r=>pill(r.rating)},{h:'Issue Type',f:'type',m:'issue',v:r=>esc(r.type)},
+    {h:'Criteria',f:'criteria',m:'issue',v:r=>esc(r.criteria),wrap:1},{h:'Root Cause',f:'root',m:'issue',v:r=>esc(r.root),wrap:1},
+    {h:'Root Cause Category',f:'rootCat',m:'issue',v:r=>esc(r.rootCat),sg:1},{h:'Impact / Risk',f:'impact',m:'issue',v:r=>esc(r.impact),wrap:1},
+    {h:'Recommendation / Action Plan',f:'rec',m:'issue',v:r=>esc(r.rec),wrap:1},{h:'Person in charge',f:'pic',m:'issue',v:r=>esc(nm(L.user,r.pic))},{h:'Due Date',f:'due',m:'issue',v:r=>fd(r.due)}];
+  const FU = [
+    {h:'Management Response',f:'resp',m:'issue',v:r=>esc(r.resp),wrap:1,cls:'fu'},{h:'Revised Due Date',f:'revised',m:'issue',v:r=>fd(r.revised),cls:'fu'},
+    {h:'Completion Date',f:'completion',m:'issue',v:r=>fd(r.completion),cls:'fu'},{h:'Issue Status',v:r=>pill(r.c.status),cls:'fu',auto:1},
+    {h:'Overdue',v:r=>pill(r.c.overdue),cls:'fu',auto:1},{h:'Days Overdue',v:r=>r.c.days||'',num:1,cls:'fu',auto:1},
+    {h:'Validated By',f:'validatedBy',m:'issue',v:r=>esc(nm(L.user,r.validatedBy)),cls:'fu',sg:1},{h:'Validation Date',f:'validationDate',m:'issue',v:r=>fd(r.validationDate),cls:'fu',sg:1},
+    {h:'Repeat Issue',f:'repeat',m:'issue',v:r=>esc(r.repeat),cls:'fu'}];
+  if (ctx==='fu') return [C2[0],{h:'Engagement',v:r=>esc(r.eng),code:1},{h:'Observation',v:r=>esc(r.obs),wrap:1},{h:'Issue Rating',v:r=>pill(r.rating)},{h:'Person in charge',v:r=>esc(nm(L.user,r.pic))},{h:'Due Date',v:r=>fd(r.due)},...FU];
+  return [...C2, ...FU];
+}
+/* Repeat Issue only editable once closed */
+const _ce2 = canEdit;
+canEdit = function(m,f,r){ if (m==='issue' && f==='repeat' && !r.completion) return false; return _ce2(m,f,r); };
+
+function viewEngagement(){
+  const e = L.eng(S.eng);
+  if (!e || !inScope(e)){ S.eng = null; return viewPlan(); }
+  const counts = engCounts(e), canProg = canEdit('plan','status',e), canSetup = canEdit('plan','name',e);
+  const iss = DB.issues.filter(i=>i.eng===e.code).map(i=>({...i,c:issueCalc(i)}));
+  const tabs = [['overview','Overview'],['execution','Execution'],['issues',`Issues (${iss.length})`]];
+  const owners = uniq(execStats(e).rows.map(r=>r.owner).filter(Boolean));
+  let body;
+  if (S.etab==='overview'){
+    body = `<div class="elayout"><div class="panel"><h3>Key Dates <span class="help" title="Planned milestones are spread across the planned period; actual dates come from Actual Start / End Date and the current status.">?</span></h3>${keyDates(e)}</div>
+      <div class="ecol"><div class="panel"><h3>Methodology <span class="help" title="Stage is taken from Engagement Status.">?</span></h3>${methodology(e)}</div>
+      <div class="panel"><h3>Execution <span class="help" title="Share of risks assessed and controls tested.">?</span></h3>${execSummary(e)}<div><button class="link" type="button" data-etab="execution">Open execution ›</button></div></div>
+      <div class="panel"><h3>Engagement details</h3><div class="dl">
+        <div><span class="k">Company</span>${esc(nm(L.company,e.company))}</div><div><span class="k">Office</span>${esc(nm(L.office,e.office))}</div>
+        <div><span class="k">Department</span>${esc(e.depts.map(d=>nm(L.dept,d)).join(', '))}</div><div><span class="k">Audit Scope</span>${esc(nm(L.scope,e.scope))}</div>
+        <div><span class="k">Engagement Type</span>${esc(e.type)}</div><div><span class="k">Priority</span>${pill(e.priority)}</div>
+        <div><span class="k">Auditor In Charge</span>${esc(nm(L.user,e.aic))}</div><div><span class="k">Team members</span>${esc(e.team.map(t=>nm(L.user,t)).join(', ')||'—')}</div>
+        <div><span class="k">Process Owner</span>${esc(nm(L.user,e.owner))}</div><div><span class="k">Planned period</span>${fd(e.pStart)} – ${fd(e.pEnd)}</div>
+        <div><span class="k">Actual period</span>${e.aStart?fd(e.aStart):'—'} – ${e.aEnd?fd(e.aEnd):'—'}</div>
+        <div><span class="k">Issues</span>${counts.n} total · ${counts.open} open · ${counts.over} overdue</div></div></div></div></div>`;
+  } else if (S.etab==='execution'){
+    body = `<div class="panel"><h3>Summary <span class="help" title="Share of risks assessed and controls tested.">?</span></h3>${execSummary(e)}</div>
+      ${permNote('rcm')}
+      <div class="panel"><div class="toolbar"><h3>Execution</h3><span class="count">Expand a risk to see and edit its control. Outcome = inherent risk → result after controls.</span></div>
+       <div class="xbar"><label class="sr" for="xq" hidden>Search</label><input type="search" id="xq" placeholder="Search risk or control" value="${esc(S.xq)}">
+        <label for="xo" style="font-size:12px;color:var(--muted)">Owner</label><select id="xo"><option value="">All</option>${owners.map(o=>`<option value="${o}"${S.xo===o?' selected':''}>${esc(nm(L.user,o))}</option>`).join('')}</select>
+        <label for="xs" style="font-size:12px;color:var(--muted)">Status</label><select id="xs"><option value="">All</option>${['Open','Completed','Issue raised'].map(o=>`<option${S.xs===o?' selected':''}>${o}</option>`).join('')}</select></div>
+       ${legend([['High inherent risk','var(--bad)'],['Moderate','var(--warn)'],['Low','var(--good)'],['Controlled (effective)','color-mix(in srgb,var(--good) 55%,var(--panel))'],['Not tested / unable to test','var(--grey)']])}
+       <div id="xtree">${execTree(e) || '<div class="empty">No risks or controls yet.</div>'}</div></div>`;
+  } else {
+    const canAddIssue = canEdit('issue','obs',{eng:e.code,pic:''});
+    body = permNote('issue') + `<div class="toolbar"><span class="count">${iss.length} issues · Yellow columns are updated on the Follow-up screen.</span>
+      <button class="btn primary" type="button" id="addIssue"${canAddIssue?'':' disabled title="Your role cannot create issues for this engagement"'}>+ New issue</button></div>` + table(issueCols('eng'), iss);
+  }
+  return `<div class="top"><div class="crumb"><button class="link" type="button" data-go="plan">Annual Plan</button> › ${esc(e.code)}</div>${header(null)}</div>
+   <div class="ehead"><div class="etitle"><span class="folder" aria-hidden="true">${ICON.folder}</span><div><h1>${esc(e.code)} – ${esc(e.name)} ${pill(e.status)} ${pill(schedCalc(e))}</h1>
+    <div class="scope">${esc(nm(L.company,e.company))} · ${esc(e.depts.map(d=>nm(L.dept,d)).join(', '))} · Viewing as <b>${esc(me().name)}</b> (${esc(me().role)})</div></div></div>
+    <div class="eacts">${canSetup?`<button class="btn" type="button" id="editEng">Edit details</button>`:''}
+     <button class="btn primary" type="button" id="updProg"${canProg?'':' disabled title="Your role cannot update progress on this engagement"'}>Update progress ›</button></div></div>
+   <div class="chips" role="tablist">${tabs.map(([k,t])=>`<button type="button" class="chip" role="tab" data-etab="${k}" aria-pressed="${S.etab===k}">${esc(t)}</button>`).join('')}</div>` + body;
+}
+
+/* =========================================================
+   RCM, Issue Log, Follow-up
+   ========================================================= */
+function viewRCM(){
+  const codes = new Set(DB.engagements.filter(e=>engMatch(e,S.f.rcm)).map(e=>e.code));
+  const rows = DB.rcm.filter(r=>codes.has(r.eng)).map(r=>Object.assign(r,{c:rcmCalc(r)}));
+  const cols = [
+    {h:'Engagement Code',v:r=>`<button class="link" type="button" data-eng="${r.eng}" style="font-family:var(--font-mono);font-size:12px">${esc(r.eng)}</button>`},{h:'Engagement Name',v:r=>esc(nm(L.eng,r.eng))},{h:'No.',v:(r,i)=>i+1,num:1},
+    {h:'Process Name',f:'process',m:'rcm',v:r=>esc(nm(L.proc,r.process))},{h:'Sub-Process',f:'sub',m:'rcm',v:r=>esc(nm(L.proc,r.sub))},{h:'Risk Code',v:r=>esc(r.riskCode),code:1,auto:1},
+    {h:'Risk Description',f:'riskDesc',m:'rcm',v:r=>esc(r.riskDesc),wrap:1},{h:'Risk Category',f:'cat',m:'rcm',v:r=>esc(r.cat)},{h:'Risk Likelihood',f:'L',m:'rcm',v:r=>r.L,num:1},{h:'Risk Impact',f:'I',m:'rcm',v:r=>r.I,num:1},
+    {h:'Risk Score',v:r=>r.c.score,num:1,auto:1},{h:'Risk Rating',v:r=>pill(r.c.rating),auto:1},{h:'Control Code',v:r=>r.ctrl?esc(r.ctrl):pill('No Control'),code:1},
+    {h:'Control Description',f:'ctrlDesc',m:'rcm',v:r=>esc(r.ctrlDesc),wrap:1},{h:'Control Frequency',f:'freq',m:'rcm',v:r=>esc(r.freq)},{h:'Control Nature',f:'nature',m:'rcm',v:r=>esc(r.nature)},
+    {h:'Control Type',f:'ctype',m:'rcm',v:r=>esc(r.ctype)},{h:'Control Owner',f:'owner',m:'rcm',v:r=>esc(nm(L.user,r.owner))},{h:'Design Effectiveness',f:'design',m:'rcm',v:r=>pill(r.design)},
+    {h:'Testable',f:'testable',m:'rcm',v:r=>esc(r.testable)},{h:'Reason not tested',f:'reason',m:'rcm',v:r=>esc(r.reason)},
+    {h:'Operating Effectiveness',f:'operating',m:'rcm',v:r=>r.testable==='N'?pill('Unable to Test'):pill(r.operating),sg:1},{h:'Overall Conclusion',v:r=>pill(r.c.overall),sg:1,auto:1},
+    {h:'Audit program',f:'program',m:'rcm',v:r=>esc(r.program),code:1},{h:'Issue Code',f:'issue',m:'rcm',v:r=>esc(r.issue),code:1},{h:'WP ref',f:'wp',m:'rcm',v:r=>esc(r.wp)}];
+  return header('Risk Control Matrix','Ma trận rủi ro – kiểm soát') + filterBar('rcm') + permNote('rcm') +
+    `<div class="toolbar"><span class="count">${rows.length} risk–control rows · Risk Score = Likelihood × Impact; 6–9 High, 3–4 Moderate, 1–2 Low.</span></div>` + table(cols, rows);
+}
+/* process / sub-process need the master list for valid pairs: edit via the engagement Execution page */
+const _ce3 = canEdit;
+canEdit = function(m,f,r){ if (m==='rcm' && ['process','sub'].includes(f)) return false; if (m==='rcm' && !r.ctrl && ['ctrlDesc','freq','nature','ctype','owner','design','testable','reason','operating'].includes(f)) return false; return _ce3(m,f,r); };
+
+function issuesFor(page){
+  const codes = new Set(DB.engagements.filter(e=>engMatch(e,S.f[page])).map(e=>e.code)), u = me();
+  return DB.issues.filter(i=>codes.has(i.eng)).filter(i=>u.role!=='Auditee'||ownRec('issue',i)).map(i=>Object.assign(i,{c:issueCalc(i)})).filter(i=>!S.f[page].istatus||i.c.status===S.f[page].istatus);
+}
+function viewLog(){
+  const rows = issuesFor('log');
+  return header('Issue Log','Sổ theo dõi phát hiện') + filterBar('log') + permNote('issue') +
+    `<div class="toolbar"><span class="count">${rows.length} issues · Yellow columns come from the Follow-up screen. / Cột vàng lấy từ màn hình Follow-up.</span></div>` + table(issueCols('log'), rows);
+}
+function viewFU(){
+  const rows = issuesFor('fu');
+  return header('Follow-up','Theo dõi khắc phục phát hiện') + filterBar('fu') + permNote('issue') +
+    `<div class="banner">Days Overdue: if Completion Date &gt; due date → Completion Date − due date; if not completed and today &gt; due date → Today − due date. The due date used is the Revised Due Date when it exists. Repeat Issue unlocks after the issue is closed.<br><span class="vi">Số ngày quá hạn dùng Revised Due Date nếu có. Repeat Issue chỉ mở sau khi phát hiện đã đóng.</span></div>` +
+    `<div class="toolbar"><span class="count">${rows.length} issues · Today is ${fd(TODAY_S)}</span></div>` + table(issueCols('fu'), rows);
+}
+
+/* =========================================================
+   Master Data
+   ========================================================= */
+const STATUS_OPTS = () => LV('Status').map(x=>[x,x]);
+const MASTER = {
+  'Company':{rows:()=>DB.companies, fields:[{k:'code',l:'Code',t:'text',req:1,note:'Entered by user, must be unique'},{k:'name',l:'Name',t:'text',req:1},{k:'hq',l:'Headquarters Address',t:'text',full:1},{k:'ceo',l:'CEO',t:'select',opts:userOpts},{k:'status',l:'Status',t:'select',opts:STATUS_OPTS,req:1}],
+    cols:[['Code','code'],['Name','name'],['Headquarters Address','hq'],['CEO',r=>nm(L.user,r.ceo)],['Status',r=>pill(r.status),1]]},
+  'Office':{rows:()=>DB.offices, fields:[{k:'code',l:'Code',t:'text',req:1},{k:'name',l:'Name',t:'text',req:1},{k:'company',l:'Company',t:'select',opts:()=>DB.companies.map(c=>[c.code,c.name]),req:1},{k:'addr',l:"Office's Address",t:'text',full:1},{k:'head',l:'Head of Office',t:'select',opts:userOpts},{k:'status',l:'Status',t:'select',opts:STATUS_OPTS,req:1}],
+    cols:[['Code','code'],['Name','name'],['Company',r=>nm(L.company,r.company)],["Office's Address",'addr'],['Head of Office',r=>nm(L.user,r.head)],['Status',r=>pill(r.status),1]]},
+  'Department':{rows:()=>DB.departments, fields:[{k:'code',l:'Code',t:'text',req:1},{k:'name',l:'Name',t:'text',req:1},{k:'company',l:'Company',t:'select',opts:()=>DB.companies.map(c=>[c.code,c.name]),req:1,cascade:1},
+    {k:'office',l:'Office',t:'select',opts:v=>DB.offices.filter(o=>o.company===v.company).map(o=>[o.code,o.name]),req:1,note:'Shows only offices of the chosen company'},{k:'head',l:'Head of Department',t:'select',opts:userOpts},{k:'status',l:'Status',t:'select',opts:STATUS_OPTS,req:1}],
+    cols:[['Code','code'],['Name','name'],['Company',r=>nm(L.company,r.company)],['Office',r=>nm(L.office,r.office)],['Head of Department',r=>nm(L.user,r.head)],['Status',r=>pill(r.status),1]]},
+  'Process':{rows:()=>DB.processes, fields:[{k:'code',l:'Code',t:'text',req:1},{k:'name',l:'Name',t:'text',req:1},{k:'parent',l:'Parent Process',t:'select',opts:()=>DB.processes.filter(p=>!p.parent).map(p=>[p.code,p.name]),note:'Empty for a main process'},{k:'status',l:'Status',t:'select',opts:STATUS_OPTS,req:1}],
+    cols:[['Code','code'],['Name','name'],['Parent Process',r=>r.parent?nm(L.proc,r.parent):'—'],['Status',r=>pill(r.status),1]]},
+  'Audit Scope':{rows:()=>DB.scopes, fields:[{k:'code',l:'Code',t:'text',req:1},{k:'name',l:'Name',t:'text',req:1},{k:'status',l:'Status',t:'select',opts:STATUS_OPTS,req:1}], cols:[['Code','code'],['Name','name'],['Status',r=>pill(r.status),1]]}
+};
+function viewMaster(){
+  const t = S.mtab, full = mp('master')==='Full';
+  const tabs = [...Object.keys(MASTER),'Dropdown Lists'];
+  let body;
+  if (t==='Dropdown Lists'){
+    body = `<div class="banner">Editable lists can be changed by the Admin. Fixed lists drive system logic and need IT to change. Auto lists are calculated. Values are set to Inactive, never deleted.<br><span class="vi">Editable: Admin được sửa · Fixed: gắn với logic hệ thống · Auto: hệ thống tự tính. Giá trị chỉ chuyển Inactive, không xóa.</span></div>
+     <div class="lists">${DB.lists.map((l,li)=>`<div class="panel"><h3 class="h3wrap">${esc(l.name)}<small>${esc(l.vi)} · ${esc(l.used)}</small></h3><div><span class="kind ${l.kind}">${l.kind}</span></div>
+      <div class="tbl" style="max-height:none"><table><thead><tr><th>Code</th><th>Value</th><th>Ý nghĩa</th><th>Status</th></tr></thead><tbody>${l.vals.map((v,vi)=>`<tr>
+       <td class="code">${esc(v.code)}</td><td><b>${esc(v.v)}</b></td><td style="white-space:normal">${esc(v.m)}</td>
+       <td>${full&&l.kind==='Editable'?`<select id="lv-${li}-${vi}" data-lv="${li}" data-vi="${vi}" aria-label="Status of ${esc(v.v)}">${['Active','Inactive'].map(s=>`<option${v.status===s?' selected':''}>${s}</option>`).join('')}</select>`:pill(v.status)}</td></tr>`).join('')}</tbody></table></div>
+      ${full&&l.kind==='Editable'?`<div class="addval"><input type="text" id="nc-${li}" placeholder="Code" aria-label="New code"><input type="text" id="nv-${li}" placeholder="Value (EN)" aria-label="New value"><input type="text" id="nm-${li}" placeholder="Ý nghĩa (VI)" aria-label="Meaning"><button class="btn" type="button" data-addlv="${li}">Add</button></div>`:''}</div>`).join('')}</div>`;
+  } else {
+    const m = MASTER[t];
+    const cols = m.cols.map(([h,k,raw])=>({h, v:r=>{const val = typeof k==='function'?k(r):r[k]; return raw?val:esc(val);}, code:k==='code'}));
+    body = `<div class="toolbar"><span class="count">${m.rows().length} records</span><button class="btn primary" type="button" id="addMaster"${full?'':' disabled title="Only Admin maintains master data"'}>+ New ${esc(t.toLowerCase())}</button></div>` + table(cols, m.rows());
+  }
+  return header('Master Data','Dữ liệu danh mục dùng chung') +
+    `<div class="banner">Each lower level selects its parent: Office selects Company; Department selects Company and Office. Engagements are created on the Annual Plan screen.<br><span class="vi">Cấp dưới chọn cấp trên. Cuộc kiểm toán được tạo ở màn hình Annual Plan.</span></div>
+    <div class="chips">${tabs.map(x=>`<button type="button" class="chip" data-mtab="${esc(x)}" aria-pressed="${x===t}">${esc(x)}</button>`).join('')}</div>` + body;
+}
+
+/* =========================================================
+   Administration
+   ========================================================= */
+const ROLE_DESC = {'Admin':'Maintains users, roles and master data. Views audit data but does not edit it.','Audit Manager':'Plans and approves engagements, closes issues, approves extensions.','Auditor':'Works on assigned engagements: RCM, testing, issues, validation.','Auditee':'Responds to issues of own department and reports completion.','Viewer':'Reads the dashboard only (CEO, Board, Audit Committee).'};
+function permSel(id, val, opts, attrs, enabled){
+  const cls = 'pc-' + (val==='Edit (own)'?'EditOwn':val.split(' ')[0]);
+  if (!enabled) return `<td class="${cls}"><span class="pv">${esc(val)}</span></td>`;
+  return `<td class="${cls}"><select id="${id}" ${attrs} aria-label="${esc(id)}">${opts.map(o=>`<option${o===val?' selected':''}>${o}</option>`).join('')}</select></td>`;
+}
+function viewAdmin(){
+  const subs = [['users','Users'],['roles','Roles & Permissions'],['trail','Audit Trail']].filter(([k])=>can(k));
+  if (!subs.find(([k])=>k===S.atab)) S.atab = subs[0][0];
+  const t = S.atab;
+  let body = '';
+  if (t==='users'){
+    const full = mp('users')==='Full';
+    const rows = DB.users;
+    const sel = (u,f,opts) => full ? `<select id="us-${u.code}-${f}" data-us="${u.code}" data-f="${f}" aria-label="${f} ${esc(u.name)}">${opts.map(o=>`<option${u[f]===o?' selected':''}>${esc(o)}</option>`).join('')}</select>` : esc(u[f]);
+    const cols = [{h:'Code',v:u=>esc(u.code),code:1},{h:'Full Name',v:u=>esc(u.name)},{h:'Email',v:u=>esc(u.email)},{h:'Position / Title',v:u=>esc(u.title)},
+      ...(mp('users')==='Full'||me().role==='Audit Manager'?[{h:'Role',v:u=>sel(u,'role',LV('Role'))},{h:'Data Scope',v:u=>sel(u,'scope',LV('Data Scope'))}]:[]),
+      {h:'Company',v:u=>esc(nm(L.company,u.company))},{h:'Office',v:u=>esc(nm(L.office,u.office))},{h:'Department',v:u=>esc(nm(L.dept,u.dept))},
+      ...(mp('users')==='Full'||me().role==='Audit Manager'?[{h:'Status',v:u=>full?sel(u,'status',LV('Status')):pill(u.status)}]:[])];
+    body = `<div class="toolbar"><span class="count">${rows.length} users${full?' · Change Role, Data Scope or Status directly in the table.':''}</span><button class="btn primary" type="button" id="addUser"${full?'':' disabled'}>+ New user</button></div>` + table(cols, rows);
+  } else if (t==='roles'){
+    const full = mp('roles')==='Full';
+    const def = FIELDS[S.pmod];
+    body = `<div class="roles">${ROLES.map(r=>`<div class="panel"><b>${esc(r)}</b><span>${esc(ROLE_DESC[r])}</span><span>${cnt(DB.users,u=>u.role===r&&u.status==='Active')} active users</span></div>`).join('')}</div>
+     <div class="panel"><h3 class="h3wrap">Module Permissions<small>Quyền theo phân hệ: Full = tạo, sửa, chuyển Inactive · Edit · View · No access</small></h3>
+      <div class="tbl matrix" style="max-height:none"><table><thead><tr><th>Module</th>${ROLES.map(r=>`<th>${esc(r)}</th>`).join('')}</tr></thead><tbody>
+      ${MODS.map(([k,en,vi])=>`<tr><td><b>${esc(en)}</b><br><small style="color:var(--muted)">${esc(vi)}</small></td>${ROLES.map((r,i)=>permSel(`mp-${k}-${i}`, MP[k][i], ['Full','Edit','View','No access'], `data-mp="${k}" data-ri="${i}"`, full && !(k==='roles'&&i===0))).join('')}</tr>`).join('')}
+      </tbody></table></div></div>
+     <div class="panel"><h3 class="h3wrap">Field Permissions<small>Quyền theo trường: Edit · Edit (own) · View · Hidden. Changes apply at once; switch "View as" to test them.</small></h3>
+      <div class="chips">${Object.entries(FIELDS).map(([k,d])=>`<button type="button" class="chip" data-pmod="${k}" aria-pressed="${S.pmod===k}">${esc(d.label)}</button>`).join('')}</div>
+      <div class="tbl matrix"><table><thead><tr><th>Field</th>${ROLES.map(r=>`<th>${esc(r)}</th>`).join('')}</tr></thead><tbody>
+      ${def.rows.map(([f,label])=>`<tr><td><b>${esc(label)}</b></td>${ROLES.map((r,i)=>permSel(`fp-${S.pmod}-${f}-${i}`, FP[S.pmod][f][i], ['Edit','Edit (own)','View','Hidden'], `data-fp="${S.pmod}" data-f="${f}" data-ri="${i}"`, full)).join('')}</tr>`).join('')}
+      </tbody></table></div><div class="empty" style="padding:0">Auto fields (Schedule Status, Risk Score, Issue Status, Days Overdue…) are always View and are not listed. Edit (own): Auditor = assigned engagements; Auditee = own department.</div></div>`;
+  } else {
+    body = `<div class="banner">Every change made in the system is recorded here. Nobody can edit or delete these entries.<br><span class="vi">Mọi thay đổi đều được ghi lại; không ai sửa hoặc xóa được nhật ký.</span></div>` +
+      table([{h:'Date / Time',v:x=>esc(x.t),code:1},{h:'Changed By',v:x=>esc(nm(L.user,x.u))},{h:'Module',v:x=>esc(x.mod)},{h:'Record',v:x=>esc(x.rec),code:1},{h:'Field',v:x=>esc(x.f)},{h:'Old Value',v:x=>esc(x.o)||'<span style="color:var(--muted)">(empty)</span>',wrap:1},{h:'New Value',v:x=>esc(x.n)||'<span style="color:var(--muted)">(empty)</span>',wrap:1}], DB.trail);
+  }
+  return header('Administration','Quản trị hệ thống') + `<div class="chips">${subs.map(([k,l])=>`<button type="button" class="chip" data-atab="${k}" aria-pressed="${t===k}">${esc(l)}</button>`).join('')}</div>` + body;
+}
+
+/* =========================================================
+   Modal forms
+   ========================================================= */
+let FORM = null;
+function fieldHTML(f, v){
+  const id = 'm-'+f.k, val = v[f.k] ?? '';
+  let ctl;
+  if (f.t==='select'||f.t==='multi'){ const o = f.opts(v), sel = x => f.t==='multi' ? (val||[]).includes(x) : String(val)===String(x);
+    ctl = `<select id="${id}" name="${f.k}"${f.t==='multi'?' multiple size="4"':''}${f.ro?' disabled':''}>${f.t==='select'?'<option value="">— Select —</option>':''}${o.map(([x,t])=>`<option value="${esc(x)}"${sel(x)?' selected':''}>${esc(t)}</option>`).join('')}</select>`; }
+  else if (f.t==='area') ctl = `<textarea id="${id}" name="${f.k}"${f.ro?' readonly':''}>${esc(val)}</textarea>`;
+  else ctl = `<input type="${f.t}" id="${id}" name="${f.k}" value="${esc(val)}"${f.ro?' readonly':''}>`;
+  return `<div class="fld${f.full?' full':''}"><label for="${id}">${esc(f.l)}${f.req?' *':''}</label>${ctl}${f.note?`<span class="note">${esc(f.note)}</span>`:''}</div>`;
+}
+function readForm(){ const v = {...FORM.vals}; FORM.fields.forEach(f=>{ const el=document.getElementById('m-'+f.k); if(!el||f.ro) return; v[f.k] = f.t==='multi'?[...el.selectedOptions].map(o=>o.value):el.value.trim(); }); return v; }
+function drawForm(err){ document.getElementById('mForm').innerHTML = FORM.fields.map(f=>fieldHTML(f,FORM.vals)).join('') + (err?`<div class="err" role="alert">${esc(err)}</div>`:'') + `<div class="acts"><button class="btn" type="button" id="mCancel">Cancel</button><button class="btn primary" type="submit">Save</button></div>`; }
+function openForm(title, fields, vals, onSave){ FORM = {fields, vals:{...vals}, onSave}; document.getElementById('mTitle').textContent = title; drawForm(); document.getElementById('modal').hidden = false; const f=document.querySelector('#mForm input:not([readonly]),#mForm select,#mForm textarea'); if (f) f.focus(); }
+function closeForm(){ document.getElementById('modal').hidden = true; FORM = null; }
+document.getElementById('mForm').addEventListener('change', e=>{
+  const f = FORM && FORM.fields.find(x=>'m-'+x.k===e.target.id);
+  if (f && f.cascade){ FORM.vals = readForm(); FORM.fields.slice(FORM.fields.indexOf(f)+1).forEach(x=>{ if (x.opts){ const ok=x.opts(FORM.vals).map(o=>String(o[0])); if (x.t==='multi') FORM.vals[x.k]=(FORM.vals[x.k]||[]).filter(c=>ok.includes(c)); else if (!ok.includes(String(FORM.vals[x.k]))) FORM.vals[x.k]=''; }}); drawForm(); document.getElementById(e.target.id).focus(); }
+});
+document.getElementById('mForm').addEventListener('submit', e=>{
+  e.preventDefault(); const v = readForm();
+  const miss = FORM.fields.filter(f=>f.req&&!f.ro&&(Array.isArray(v[f.k])?!v[f.k].length:!v[f.k]));
+  if (miss.length){ FORM.vals=v; drawForm('Please fill in: '+miss.map(f=>f.l).join(', ')+'. / Vui lòng nhập đủ các trường bắt buộc.'); return; }
+  const err = FORM.onSave(v); if (err){ FORM.vals=v; drawForm(err); return; }
+  closeForm(); render();
+});
+document.getElementById('mClose').addEventListener('click', closeForm);
+document.getElementById('modal').addEventListener('click', e=>{ if (e.target.id==='modal'||e.target.id==='mCancel') closeForm(); });
+document.addEventListener('keydown', e=>{ if (e.key==='Escape' && !document.getElementById('modal').hidden) closeForm(); });
+
+const ENG_FIELDS = [
+  {k:'code',l:'Engagement Code',t:'text',ro:1,note:'Created by the system'},{k:'name',l:'Engagement Name',t:'text',req:1},
+  {k:'type',l:'Engagement Type',t:'select',opts:listOpts('Engagement Type'),req:1},{k:'year',l:'Year',t:'text',req:1},
+  {k:'company',l:'Company',t:'select',opts:()=>DB.companies.filter(c=>c.status==='Active').map(c=>[c.code,c.name]),req:1,cascade:1},
+  {k:'office',l:'Office',t:'select',opts:v=>DB.offices.filter(o=>o.company===v.company&&o.status==='Active').map(o=>[o.code,o.name]),req:1,cascade:1},
+  {k:'depts',l:'Department (one or more)',t:'multi',opts:v=>DB.departments.filter(d=>d.office===v.office&&d.status==='Active').map(d=>[d.code,d.name]),req:1},
+  {k:'scope',l:'Audit Scope',t:'select',opts:()=>DB.scopes.filter(s=>s.status==='Active').map(s=>[s.code,s.name]),req:1},
+  {k:'pStart',l:'Planned Start Date',t:'date',req:1},{k:'pEnd',l:'Planned End Date',t:'date',req:1},
+  {k:'aic',l:'Auditor In Charge',t:'select',opts:auditorOpts,req:1},{k:'team',l:'Team members',t:'multi',opts:auditorOpts},
+  {k:'owner',l:'Process Owner',t:'select',opts:userOpts,req:1},{k:'priority',l:'Engagement Priority',t:'select',opts:listOpts('Engagement Priority'),req:1}];
+function nextCode(prefix, arr, key){ const n = arr.filter(x=>x[key].startsWith(prefix)).map(x=>+x[key].slice(prefix.length)).reduce((a,b)=>Math.max(a,b||0),0)+1; return prefix+String(n).padStart(2,'0'); }
+function newEngagement(){
+  openForm('New engagement / Tạo cuộc kiểm toán', ENG_FIELDS, {code:'(created on save)',year:'2026',type:'Planned',priority:'Moderate',depts:[],team:[]}, v=>{
+    if (v.pEnd < v.pStart) return 'Planned End Date must be after Planned Start Date.';
+    const code = nextCode(`IA-${v.year}-`, DB.engagements, 'code');
+    DB.engagements.push({...v, code, status:'Not started', aStart:'', aEnd:''}); log('Annual Plan', code, 'Engagement', '', 'Created'); toast(`Created ${code}`);
+  });
+}
+function editEngagement(code){
+  const e = L.eng(code);
+  openForm(`${code} · Edit details`, ENG_FIELDS, {...e}, v=>{
+    if (v.pEnd < v.pStart) return 'Planned End Date must be after Planned Start Date.';
+    ENG_FIELDS.forEach(f=>{ if (!f.ro && JSON.stringify(e[f.k])!==JSON.stringify(v[f.k])) log('Annual Plan', code, f.l, [].concat(e[f.k]).join(', '), [].concat(v[f.k]).join(', ')); });
+    Object.assign(e, v, {code}); toast(`Saved ${code}`);
+  });
+}
+function updateProgress(code){
+  const e = L.eng(code);
+  const fields = [{k:'status',l:'Engagement Status',t:'select',opts:listOpts('Engagement Status'),req:1},{k:'aStart',l:'Actual Start Date',t:'date'},{k:'aEnd',l:'Actual End Date (= Final Report Issue Date)',t:'date'}];
+  const order = LV('Engagement Status'), next = order[Math.min(order.indexOf(e.status)+1, 4)];
+  openForm(`${code} · Update progress`, fields, {status: e.status==='Final Report Issued'?e.status:next, aStart:e.aStart||(e.status==='Not started'?TODAY_S:''), aEnd:e.aEnd}, v=>{
+    if (v.aEnd && v.aStart && v.aEnd < v.aStart) return 'Actual End Date must be after Actual Start Date.';
+    if (v.status==='Final Report Issued' && !v.aEnd) return 'Enter the Actual End Date (Final Report Issue Date) when the status is Final Report Issued.';
+    if (v.aEnd && v.status!=='Final Report Issued') return 'Actual End Date is the Final Report Issue Date, so the status must be Final Report Issued.';
+    if (v.status!=='Not started' && !v.aStart && !['Cancelled','Deferred'].includes(v.status)) return 'Enter the Actual Start Date.';
+    fields.forEach(f=>{ if ((e[f.k]||'')!==(v[f.k]||'')) log('Annual Plan', code, f.l, e[f.k], v[f.k]); });
+    Object.assign(e, v); toast(`${code} moved to ${v.status}`);
+  });
+}
+function newIssue(code){
+  const e = L.eng(code);
+  const subs = uniq(DB.rcm.filter(r=>r.eng===code).map(r=>r.sub));
+  const fields = [
+    {k:'sub',l:'Sub-Process',t:'select',opts:()=>(subs.length?subs:DB.processes.filter(p=>p.parent).map(p=>p.code)).map(s=>[s,nm(L.proc,s)]),req:1},
+    {k:'obs',l:'Observation',t:'area',req:1,full:1},{k:'rating',l:'Issue Rating',t:'select',opts:listOpts('Issue Rating'),req:1},{k:'type',l:'Issue Type',t:'select',opts:listOpts('Issue Type'),req:1},
+    {k:'criteria',l:'Criteria',t:'text',full:1},{k:'root',l:'Root Cause',t:'area',full:1},{k:'rootCat',l:'Root Cause Category',t:'select',opts:listOpts('Root Cause Category')},
+    {k:'impact',l:'Impact / Risk',t:'text'},{k:'rec',l:'Recommendation / Action Plan',t:'area',req:1,full:1},
+    {k:'pic',l:'Person in charge',t:'select',opts:userOpts,req:1},{k:'due',l:'Due Date',t:'date',req:1}];
+  openForm(`${code} · New issue`, fields, {pic:e.owner}, v=>{
+    const n = nextCode(`ISS-${code.slice(3)}-`, DB.issues, 'code');
+    DB.issues.push({...v, code:n, eng:code, process:(L.proc(v.sub)||{}).parent||'', resp:'', revised:'', completion:'', repeat:'', validatedBy:'', validationDate:''});
+    log('Issue Log', n, 'Issue', '', 'Created'); toast(`Created ${n}`);
+  });
+}
+function newMaster(t){
+  const m = MASTER[t];
+  openForm(`New ${t.toLowerCase()} / Tạo mới`, m.fields, {status:'Active'}, v=>{
+    if (m.rows().some(r=>r.code.toLowerCase()===v.code.toLowerCase())) return `Code "${v.code}" already exists. Codes must be unique.`;
+    m.rows().push(v); log('Master Data', v.code, t, '', 'Created'); toast(`Created ${t} ${v.code}`);
+  });
+}
+function newUser(){
+  const fields = [{k:'code',l:'Code',t:'text',req:1,note:'Employee ID'},{k:'name',l:'Full Name',t:'text',req:1},{k:'email',l:'Email',t:'email',req:1},
+    {k:'title',l:'Position / Title',t:'select',opts:listOpts('Position / Title'),req:1},{k:'role',l:'Role',t:'select',opts:listOpts('Role'),req:1},{k:'scope',l:'Data Scope',t:'select',opts:listOpts('Data Scope'),req:1},
+    {k:'company',l:'Company',t:'select',opts:()=>DB.companies.map(c=>[c.code,c.name]),req:1,cascade:1},{k:'office',l:'Office',t:'select',opts:v=>DB.offices.filter(o=>o.company===v.company).map(o=>[o.code,o.name]),req:1,cascade:1},
+    {k:'dept',l:'Department',t:'select',opts:v=>DB.departments.filter(d=>d.office===v.office).map(d=>[d.code,d.name]),req:1},{k:'status',l:'Status',t:'select',opts:STATUS_OPTS,req:1}];
+  openForm('New user / Tạo người dùng', fields, {status:'Active'}, v=>{
+    if (DB.users.some(u=>u.code.toLowerCase()===v.code.toLowerCase())) return `Code "${v.code}" already exists.`;
+    if (DB.users.some(u=>u.email.toLowerCase()===v.email.toLowerCase())) return `Email "${v.email}" is already used.`;
+    DB.users.push(v); log('Administration', v.code, 'User', '', 'Created'); toast(`Created user ${v.name}`);
+  });
+}
+
+/* =========================================================
+   Render + events
+   ========================================================= */
+const TABS = [['dashboard','Dashboard','Tổng quan',()=>can('dashboard')],['plan','Annual Plan','Kế hoạch năm',()=>can('plan')],['rcm','Risk Control Matrix','Ma trận rủi ro – kiểm soát',()=>can('rcm')],
+  ['log','Issue Log','Sổ theo dõi phát hiện',()=>can('log')],['fu','Follow-up','Theo dõi khắc phục',()=>can('fu')],['master','Master Data','Dữ liệu danh mục',()=>can('master')],
+  ['admin','Administration','Quản trị hệ thống',()=>can('users')||can('roles')||can('trail')]];
+function render(){
+  const okTabs = TABS.filter(t=>t[3]());
+  if (!okTabs.length){ document.getElementById('nav').innerHTML=''; document.getElementById('main').innerHTML = header('No access','Không có quyền') + '<div class="banner">This role has no modules. Ask the Admin to grant access.</div>'; return; }
+  if (!okTabs.find(t=>t[0]===S.tab)){ S.tab = okTabs[0][0]; S.eng = null; }
+  if (S.eng && !can('plan')) S.eng = null;
+  document.getElementById('nav').innerHTML = okTabs.map(([id,en,vi])=>`<button type="button" data-tab="${id}"${S.tab===id?' aria-current="page"':''}>${esc(en)}<small>${esc(vi)}</small></button>`).join('');
+  const views = {dashboard:viewDashboard, plan:()=>S.eng?viewEngagement():viewPlan(), rcm:viewRCM, log:viewLog, fu:viewFU, master:viewMaster, admin:viewAdmin};
+  document.getElementById('main').innerHTML = views[S.tab]();
+}
+function openEng(code){ S.tab='plan'; S.eng=code; S.etab='overview'; S.xq=''; S.xo=''; S.xs=''; render(); window.scrollTo(0,0); }
+document.getElementById('nav').addEventListener('click', e=>{ const b=e.target.closest('[data-tab]'); if (b){ S.tab=b.dataset.tab; S.eng=null; try{localStorage.setItem('ia-tab',S.tab);}catch(_){} render(); window.scrollTo(0,0);} });
+const main = document.getElementById('main');
+main.addEventListener('change', e=>{
+  const t = e.target, d = t.dataset;
+  if (t.id==='whoSel'){ S.user=t.value; ['dashboard','plan','rcm','log','fu'].forEach(k=>S.f[k]={}); render(); toast(`Now viewing as ${me().name} (${me().role})`); return; }
+  if (d.fk){ onFilter(t.closest('[data-fpage]').dataset.fpage, d.fk, t.value); return; }
+  if (d.ed){ applyEdit(d.ed, d.key, d.f, t.value); return; }
+  if (t.id==='xo'){ S.xo=t.value; render(); return; }
+  if (t.id==='xs'){ S.xs=t.value; render(); return; }
+  if (d.mp){ const old=MP[d.mp][+d.ri]; MP[d.mp][+d.ri]=t.value; log('Administration','Module Permissions',`${MODS.find(x=>x[0]===d.mp)[1]} · ${ROLES[+d.ri]}`,old,t.value); render(); toast('Module permission updated'); return; }
+  if (d.fp){ const old=FP[d.fp][d.f][+d.ri]; FP[d.fp][d.f][+d.ri]=t.value; log('Administration','Field Permissions',`${fieldLabel(d.fp,d.f)} · ${ROLES[+d.ri]}`,old,t.value); render(); toast('Field permission updated'); return; }
+  if (d.us){ const u=L.user(d.us), old=u[d.f]; u[d.f]=t.value; log('Administration',u.code,d.f==='scope'?'Data Scope':d.f==='role'?'Role':'Status',old,t.value); if (u.code===S.user) render(); else render(); toast(`Updated ${u.name}`); return; }
+  if (d.lv){ const l=DB.lists[+d.lv], v=l.vals[+d.vi], old=v.status; v.status=t.value; log('Master Data',l.name,v.v,old,t.value); render(); toast(`${v.v}: ${t.value}`); return; }
+});
+main.addEventListener('input', e=>{
+  if (e.target.id==='xq'){ S.xq=e.target.value; const box=document.getElementById('xtree'); const en=L.eng(S.eng); if (box&&en) box.innerHTML = execTree(en) || '<div class="empty">No rows.</div>'; }
+});
+main.addEventListener('click', e=>{
+  const t = e.target.closest('button'); if (!t) return; const d = t.dataset;
+  if (d.freset){ S.f[d.freset]={}; render(); return; }
+  if (d.sec){ S.dashSec=d.sec; render(); return; }
+  if (d.eng){ openEng(d.eng); return; }
+  if (d.go){ S.tab=d.go; S.eng=null; render(); return; }
+  if (d.etab){ S.etab=d.etab; render(); return; }
+  if (d.tsub){ S.closed.has(d.tsub)?S.closed.delete(d.tsub):S.closed.add(d.tsub); render(); return; }
+  if (d.trisk){ S.open.has(d.trisk)?S.open.delete(d.trisk):S.open.add(d.trisk); render(); return; }
+  if (d.mtab){ S.mtab=d.mtab; render(); return; }
+  if (d.atab){ S.atab=d.atab; render(); return; }
+  if (d.pmod){ S.pmod=d.pmod; render(); return; }
+  if (d.addlv){ const li=+d.addlv, l=DB.lists[li], c=document.getElementById('nc-'+li).value.trim(), v=document.getElementById('nv-'+li).value.trim(), m=document.getElementById('nm-'+li).value.trim();
+    if (!c||!v){ toast('Enter a code and a value.'); return; } if (l.vals.some(x=>x.code===c||x.v===v)){ toast('This code or value already exists.'); return; }
+    l.vals.push({code:c,v,m,status:'Active'}); log('Master Data',l.name,'Value','',v); render(); toast(`Added "${v}" to ${l.name}`); return; }
+  if (t.id==='addEng'){ newEngagement(); return; }
+  if (t.id==='editEng'){ editEngagement(S.eng); return; }
+  if (t.id==='updProg'){ updateProgress(S.eng); return; }
+  if (t.id==='addIssue'){ newIssue(S.eng); return; }
+  if (t.id==='addMaster'){ newMaster(S.mtab); return; }
+  if (t.id==='addUser'){ newUser(); return; }
+});
+
+try { const s = localStorage.getItem('ia-tab'); if (s) S.tab = s; } catch(_) {}
+render();
+</script>
+
+</body></html>
